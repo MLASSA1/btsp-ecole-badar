@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if section else "Ajouter" }} Section{% endblock %}
+{% block page_title %}{{ "Modifier" if section else "Nouvelle" }} Section{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_sections') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Titre de la section</label>
+          <input type="text" id="title" name="title" required value="{{ section.title if section else '' }}" placeholder="Ex: Pourquoi Nous Choisir ?">
+        </div>
+        <div class="form-group">
+          <label for="subtitle">Sous-titre (optionnel)</label>
+          <input type="text" id="subtitle" name="subtitle" value="{{ section.subtitle if section else '' }}" placeholder="Ex: Des raisons de nous faire confiance">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="content">Contenu (HTML autorisé)</label>
+        <textarea id="content" name="content" rows="6" placeholder="Texte ou HTML de la section...">{{ section.content if section else '' }}</textarea>
+        <div class="help">Vous pouvez utiliser du HTML pour structurer le contenu (listes, paragraphes, etc.)</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="section_key">Clé unique</label>
+          <input type="text" id="section_key" name="section_key" value="{{ section.section_key if section else '' }}" placeholder="Auto-générée si vide">
+          <div class="help">Identifiant unique (ex: why-us, partners). Généré automatiquement si laissé vide.</div>
+        </div>
+        <div class="form-group">
+          <label for="animation">Animation d'entrée</label>
+          <select id="animation" name="animation">
+            <option value="fade-up" {% if section and section.animation == 'fade-up' %}selected{% endif %}>Fondu vers le haut</option>
+            <option value="fade-in" {% if section and section.animation == 'fade-in' %}selected{% endif %}>Fondu simple</option>
+            <option value="slide-left" {% if section and section.animation == 'slide-left' %}selected{% endif %}>Glissement depuis la gauche</option>
+            <option value="slide-right" {% if section and section.animation == 'slide-right' %}selected{% endif %}>Glissement depuis la droite</option>
+            <option value="zoom-in" {% if section and section.animation == 'zoom-in' %}selected{% endif %}>Zoom avant</option>
+            <option value="bounce" {% if section and section.animation == 'bounce' %}selected{% endif %}>Rebond</option>
+            <option value="none" {% if section and section.animation == 'none' %}selected{% endif %}>Aucune</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="image">Image (optionnel)</label>
+          <input type="file" id="image" name="image" accept="image/*">
+          {% if section and section.image %}
+            <div class="mt-2"><img src="{{ section.image }}" class="thumb" alt="" style="width:120px;height:80px"></div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label for="icon">Icône SVG (optionnel)</label>
+          <textarea id="icon" name="icon" rows="2" placeholder="Collez le code SVG ici">{{ section.icon if section else '' }}</textarea>
+          <div class="help">Code SVG inline pour l'icône de la section</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="button_text">Texte du bouton (optionnel)</label>
+          <input type="text" id="button_text" name="button_text" value="{{ section.button_text if section else '' }}" placeholder="Ex: En savoir plus">
+        </div>
+        <div class="form-group">
+          <label for="button_link">Lien du bouton</label>
+          <input type="text" id="button_link" name="button_link" value="{{ section.button_link if section else '' }}" placeholder="Ex: #contact ou https://...">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="sort_order">Ordre d'affichage</label>
+          <input type="number" id="sort_order" name="sort_order" value="{{ section.sort_order if section else 0 }}">
+        </div>
+        <div class="form-group">
+          <label for="lang">Langue</label>
+          <select id="lang" name="lang">
+            <option value="fr" {% if section and section.lang == 'fr' %}selected{% endif %}>Français</option>
+            <option value="en" {% if section and section.lang == 'en' %}selected{% endif %}>English</option>
+            <option value="ar" {% if section and section.lang == 'ar' %}selected{% endif %}>العربية</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-check">
+          <input type="checkbox" name="active" {% if not section or section.active %}checked{% endif %}>
+          Section active (visible sur le site)
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if section else "Ajouter la section" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

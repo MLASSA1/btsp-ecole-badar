@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block title %}Récompenses{% endblock %}
+{% block page_title %}Récompenses{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Icône</th>
+          <th>Titre</th>
+          <th>Description</th>
+          <th>Critère</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rewards %}
+        <tr>
+          <td>
+            <div style="width:40px;height:40px;border-radius:var(--radius);background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+              {{ r.icon if r.icon else '🏆' }}
+            </div>
+          </td>
+          <td><strong>{{ r.title }}</strong></td>
+          <td class="text-sm text-muted">{{ r.description[:80] }}{% if r.description|length > 80 %}...{% endif %}</td>
+          <td class="text-sm">{{ r.criteria if r.criteria else '—' }}</td>
+          <td>
+            {% if r.active %}
+              <span class="badge badge-success">Actif</span>
+            {% else %}
+              <span class="badge badge-muted">Inactif</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not rewards %}
+        <tr>
+          <td colspan="5" class="text-muted text-sm" style="text-align:center;padding:24px">Aucune récompense configurée.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

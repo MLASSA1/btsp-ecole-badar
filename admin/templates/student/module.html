@@ -1,0 +1,235 @@
+{% extends "student/base.html" %}
+{% block title %}{{ module.title }}{% endblock %}
+
+{% block content %}
+<style>
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: var(--text-muted);
+    margin-bottom: 20px; transition: 0.2s;
+  }
+  .back-link:hover { color: var(--primary); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  .module-header {
+    margin-bottom: 24px;
+  }
+  .module-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem; font-weight: 700; color: var(--dark);
+    margin-bottom: 8px;
+  }
+  .module-header .module-desc {
+    font-size: 0.9rem; color: var(--text-light); line-height: 1.6;
+  }
+
+  /* Video Section */
+  .video-section {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .video-container {
+    position: relative; width: 100%;
+    background: #000; border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .video-container iframe {
+    display: block;
+  }
+  .video-actions {
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  .video-actions .materials-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: var(--primary); font-weight: 500;
+  }
+  .video-actions .materials-link svg { width: 16px; height: 16px; }
+  .video-actions .materials-link:hover { text-decoration: underline; }
+
+  /* No Video placeholder */
+  .no-video {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 48px 20px;
+    text-align: center; color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .no-video svg { width: 48px; height: 48px; color: var(--border); margin-bottom: 12px; }
+  .no-video p { font-size: 0.9rem; }
+
+  /* Quiz Section */
+  .quiz-section {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .quiz-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .quiz-header h2 {
+    font-size: 1.1rem; font-weight: 700; color: var(--dark);
+  }
+  .quiz-header svg { width: 22px; height: 22px; color: var(--gold); }
+  .quiz-body { padding: 24px; }
+
+  .quiz-question {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .quiz-question:last-child {
+    margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+  }
+  .quiz-question-text {
+    font-size: 0.95rem; font-weight: 600; color: var(--dark);
+    margin-bottom: 14px;
+    display: flex; gap: 8px;
+  }
+  .quiz-question-text .q-num {
+    color: var(--primary); font-weight: 700; flex-shrink: 0;
+  }
+  .quiz-options { list-style: none; }
+  .quiz-option {
+    margin-bottom: 8px;
+  }
+  .quiz-option label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 0.9rem; color: var(--text);
+    transition: all 0.2s;
+  }
+  .quiz-option label:hover {
+    border-color: var(--primary); background: #F8FAFC;
+  }
+  .quiz-option input[type="radio"] {
+    width: 18px; height: 18px; accent-color: var(--primary);
+    flex-shrink: 0;
+  }
+  .quiz-submit {
+    padding: 20px 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end;
+  }
+
+  @media (max-width: 768px) {
+    .video-actions { flex-direction: column; align-items: stretch; }
+  }
+</style>
+
+<a href="{{ url_for('student_course', course_id=course.id) }}" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+  Retour a {{ course.title }}
+</a>
+
+<!-- Module Header -->
+<div class="module-header">
+  <h1>{{ module.title }}</h1>
+  {% if module.description %}
+    <p class="module-desc">{{ module.description }}</p>
+  {% endif %}
+</div>
+
+<!-- Video Player -->
+{% if module.video_url %}
+<div class="video-section">
+  <div class="video-container">
+    <iframe src="{{ module.video_url }}" width="100%" height="480" allow="autoplay" allowfullscreen style="border:none;border-radius:12px 12px 0 0"></iframe>
+  </div>
+  <div class="video-actions">
+    <div>
+      {% if module.materials_url %}
+        <a href="{{ module.materials_url }}" target="_blank" class="materials-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Telecharger les supports
+        </a>
+      {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('student_complete_module', course_id=course.id, module_id=module.id) }}">
+      <button type="submit" class="btn btn-success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+        Marquer comme termine
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="no-video">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  <p>Aucune video disponible pour ce module.</p>
+  {% if module.materials_url %}
+    <a href="{{ module.materials_url }}" target="_blank" class="btn btn-primary btn-sm" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Telecharger les supports
+    </a>
+  {% endif %}
+  <form method="POST" action="{{ url_for('student_complete_module', course_id=course.id, module_id=module.id) }}" style="margin-top:16px;">
+    <button type="submit" class="btn btn-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+      Marquer comme termine
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Quiz Section -->
+{% if quizzes %}
+<div class="quiz-section">
+  <div class="quiz-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <h2>Quiz</h2>
+  </div>
+  <form method="POST" action="{{ url_for('student_submit_quiz', module_id=module.id) }}">
+    <div class="quiz-body">
+      {% for quiz in quizzes %}
+      <div class="quiz-question">
+        <div class="quiz-question-text">
+          <span class="q-num">{{ loop.index }}.</span>
+          <span>{{ quiz.question }}</span>
+        </div>
+        <ul class="quiz-options">
+          <li class="quiz-option">
+            <label>
+              <input type="radio" name="q_{{ quiz.id }}" value="a" required>
+              {{ quiz.option_a }}
+            </label>
+          </li>
+          <li class="quiz-option">
+            <label>
+              <input type="radio" name="q_{{ quiz.id }}" value="b">
+              {{ quiz.option_b }}
+            </label>
+          </li>
+          {% if quiz.option_c %}
+          <li class="quiz-option">
+            <label>
+              <input type="radio" name="q_{{ quiz.id }}" value="c">
+              {{ quiz.option_c }}
+            </label>
+          </li>
+          {% endif %}
+          {% if quiz.option_d %}
+          <li class="quiz-option">
+            <label>
+              <input type="radio" name="q_{{ quiz.id }}" value="d">
+              {{ quiz.option_d }}
+            </label>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="quiz-submit">
+      <button type="submit" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Soumettre le quiz
+      </button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

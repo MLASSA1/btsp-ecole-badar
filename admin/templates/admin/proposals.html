@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}Demandes de Devis{% endblock %}
+{% block page_title %}Demandes de Devis{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Entreprise</th>
+          <th>Contact</th>
+          <th>Email</th>
+          <th>Telephone</th>
+          <th>Formation</th>
+          <th>Participants</th>
+          <th>Budget</th>
+          <th>Date</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in proposals %}
+        <tr>
+          <td><strong>{{ p.entreprise }}</strong></td>
+          <td>{{ p.contact }}</td>
+          <td>{{ p.email }}</td>
+          <td>{{ p.telephone }}</td>
+          <td class="text-sm">{{ p.formation }}</td>
+          <td>{{ p.participants }}</td>
+          <td>{{ p.budget }}</td>
+          <td class="text-sm text-muted">{{ p.created_at[:16] }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_proposal_status', id=p.id) }}" style="display:inline">
+              <select name="status" onchange="this.form.submit()" style="padding:4px 8px;border-radius:6px;border:1px solid #E5E7EB;font-size:0.8rem;font-family:inherit;cursor:pointer;
+                {% if p.status == 'nouveau' %}background:#DBEAFE;color:#1E40AF{% elif p.status == 'en_cours' %}background:#FEF3C7;color:#92400E{% elif p.status == 'accepte' %}background:#DCFCE7;color:#166534{% elif p.status == 'refuse' %}background:#FEE2E2;color:#991B1B{% endif %}">
+                <option value="nouveau" {% if p.status == 'nouveau' %}selected{% endif %}>Nouveau</option>
+                <option value="en_cours" {% if p.status == 'en_cours' %}selected{% endif %}>En cours</option>
+                <option value="accepte" {% if p.status == 'accepte' %}selected{% endif %}>Accepte</option>
+                <option value="refuse" {% if p.status == 'refuse' %}selected{% endif %}>Refuse</option>
+              </select>
+              <details style="margin-top:4px">
+                <summary style="font-size:0.75rem;color:#6B7280;cursor:pointer">Notes</summary>
+                <textarea name="admin_notes" rows="2" style="width:100%;margin-top:4px;font-size:0.8rem;border:1px solid #E5E7EB;border-radius:6px;padding:4px 8px;font-family:inherit">{{ p.admin_notes if p.admin_notes else '' }}</textarea>
+                <button type="submit" class="btn btn-sm" style="margin-top:4px">Sauver</button>
+              </details>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_proposal_delete', id=p.id) }}" onsubmit="return confirm('Supprimer cette demande ?')">
+              <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-muted" style="text-align:center;padding:32px">Aucune demande de devis.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}Formations{% endblock %}
+{% block page_title %}Formations{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_formation_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Titre</th>
+          <th>Durée</th>
+          <th>Type</th>
+          <th>Catégorie</th>
+          <th>Langue</th>
+          <th>Statut</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in formations %}
+        <tr>
+          <td>
+            {% if f.image %}
+              <img src="{{ f.image }}" class="thumb" alt="{{ f.title }}">
+            {% else %}
+              <div class="thumb-placeholder">IMG</div>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ f.title }}</strong>
+            {% if f.featured %}<span class="badge badge-warning" style="margin-left:6px">Vedette</span>{% endif %}
+            {% if f.badge %}<span class="badge badge-info" style="margin-left:4px">{{ f.badge }}</span>{% endif %}
+          </td>
+          <td>{{ f.duration }}</td>
+          <td>{{ f.diploma_type }}</td>
+          <td><span class="badge {% if f.category == 'it' %}badge-info{% elif f.category == 'hospitality' %}badge-warning{% else %}badge-muted{% endif %}">{{ f.category }}</span></td>
+          <td>{{ f.lang|upper }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_formation_toggle', id=f.id) }}" style="display:inline">
+              <button type="submit" class="badge {% if f.active %}badge-success{% else %}badge-danger{% endif %}" style="cursor:pointer;border:none">
+                {{ "Actif" if f.active else "Inactif" }}
+              </button>
+            </form>
+          </td>
+          <td>{{ f.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_formation_edit', id=f.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_formation_delete', id=f.id) }}" onsubmit="return confirm('Supprimer cette formation ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

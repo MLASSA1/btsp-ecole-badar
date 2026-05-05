@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block title %}FAQ{% endblock %}
+{% block page_title %}FAQ{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_faq_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th>Reponse</th>
+          <th>Langue</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in faqs %}
+        <tr>
+          <td><strong>{{ f.question[:60] }}{% if f.question|length > 60 %}...{% endif %}</strong></td>
+          <td class="text-sm text-muted">{{ f.answer[:80] }}{% if f.answer|length > 80 %}...{% endif %}</td>
+          <td>{{ f.lang|upper }}</td>
+          <td>{{ f.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_faq_edit', id=f.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_faq_delete', id=f.id) }}" onsubmit="return confirm('Supprimer cette FAQ ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted" style="text-align:center;padding:32px">Aucune FAQ.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

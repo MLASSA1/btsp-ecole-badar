@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mon Espace{% endblock %} - BTSP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1B2A4A;
+      --primary-dark: #0F1D36;
+      --primary-light: #2A3F6A;
+      --accent: #C41E3A;
+      --accent-dark: #A3182F;
+      --gold: #D4A017;
+      --gold-light: #E8C547;
+      --cream: #FDF8F0;
+      --dark: #1A1A1A;
+      --text: #3D3D3D;
+      --text-light: #6B6B6B;
+      --text-muted: #9A9A9A;
+      --border: #E5E7EB;
+      --bg: #F5F7FA;
+      --white: #FFFFFF;
+      --success: #16A34A;
+      --success-light: #DCFCE7;
+      --warning: #D97706;
+      --warning-light: #FEF3C7;
+      --danger: #DC2626;
+      --danger-light: #FEE2E2;
+      --info: #2563EB;
+      --info-light: #DBEAFE;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+      --navbar-h: 64px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--navbar-h);
+      background: var(--primary);
+      color: var(--white);
+      display: flex; align-items: center;
+      padding: 0 32px;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 600;
+      color: var(--white);
+      margin-right: 40px;
+      flex-shrink: 0;
+    }
+    .nav-brand em { color: var(--gold); font-style: italic; }
+    .nav-links {
+      display: flex; align-items: center; gap: 4px;
+      list-style: none; flex: 1;
+    }
+    .nav-links a {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem; font-weight: 500;
+      color: rgba(255,255,255,0.7);
+      transition: all 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); background: rgba(255,255,255,0.1); }
+    .nav-links a.active { color: var(--white); background: rgba(255,255,255,0.15); }
+    .nav-links a svg { width: 18px; height: 18px; }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 16px;
+      margin-left: auto; flex-shrink: 0;
+    }
+    .nav-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem;
+    }
+    .nav-user {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.88rem; color: rgba(255,255,255,0.85);
+    }
+    .nav-logout {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem; font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: 0.2s;
+    }
+    .nav-logout:hover { color: var(--white); border-color: rgba(255,255,255,0.5); }
+
+    /* Hamburger */
+    .nav-toggle {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      flex-direction: column; gap: 5px; padding: 4px;
+    }
+    .nav-toggle span {
+      display: block; width: 22px; height: 2px;
+      background: var(--white); border-radius: 2px;
+      transition: 0.3s;
+    }
+
+    /* ── Main Content ── */
+    .main {
+      margin-top: var(--navbar-h);
+      min-height: calc(100vh - var(--navbar-h));
+      padding: 32px;
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .page-header {
+      margin-bottom: 28px;
+    }
+    .page-header h1 {
+      font-size: 1.5rem; font-weight: 700; color: var(--dark);
+      font-family: 'Playfair Display', serif;
+    }
+    .page-header p {
+      font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;
+    }
+
+    /* ── Flash Messages ── */
+    .flash {
+      padding: 12px 20px; border-radius: var(--radius-sm); margin-bottom: 20px;
+      font-size: 0.9rem; font-weight: 500;
+    }
+    .flash-success { background: var(--success-light); color: #166534; border: 1px solid #BBF7D0; }
+    .flash-error { background: var(--danger-light); color: #991B1B; border: 1px solid #FECACA; }
+    .flash-warning { background: var(--warning-light); color: #92400E; border: 1px solid #FDE68A; }
+    .flash-info { background: var(--info-light); color: #1E40AF; border: 1px solid #BFDBFE; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600; font-size: 0.95rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; font-size: 0.88rem; font-weight: 600;
+      font-family: inherit;
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s;
+      background: var(--white); color: var(--text);
+    }
+    .btn:hover { border-color: var(--text-muted); }
+    .btn-primary { background: var(--primary); color: var(--white); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-accent { background: var(--accent); color: var(--white); border-color: var(--accent); }
+    .btn-accent:hover { background: var(--accent-dark); }
+    .btn-success { background: var(--success); color: var(--white); border-color: var(--success); }
+    .btn-success:hover { opacity: 0.9; }
+    .btn-gold { background: var(--gold); color: var(--white); border-color: var(--gold); }
+    .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
+    .btn-block { width: 100%; justify-content: center; }
+
+    /* ── Progress Bar ── */
+    .progress-bar {
+      width: 100%; height: 6px;
+      background: var(--border); border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      background: var(--primary);
+      transition: width 0.4s ease;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 50px; font-size: 0.73rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .badge-culinary { background: #FEF3C7; color: #92400E; }
+    .badge-it { background: #DBEAFE; color: #1E40AF; }
+    .badge-hospitality { background: #FDE68A; color: #78350F; }
+    .badge-default { background: #F3F4F6; color: #6B7280; }
+
+    /* ── Utility ── */
+    .text-muted { color: var(--text-muted); }
+    .text-sm { font-size: 0.85rem; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .navbar { padding: 0 16px; }
+      .nav-toggle { display: flex; }
+      .nav-links {
+        position: fixed; top: var(--navbar-h); left: 0; right: 0;
+        background: var(--primary-dark);
+        flex-direction: column; padding: 16px;
+        transform: translateY(-120%);
+        transition: transform 0.3s;
+        box-shadow: var(--shadow-lg);
+      }
+      .nav-links.open { transform: translateY(0); }
+      .nav-links a { width: 100%; padding: 12px 16px; }
+      .nav-user span.nav-user-name { display: none; }
+      .main { padding: 20px 16px; }
+    }
+    @media (max-width: 480px) {
+      .main { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="{{ url_for('index_default') }}" class="nav-brand">BTSP <em>Learning</em></a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" onclick="document.getElementById('navLinks').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+
+    <ul class="nav-links" id="navLinks">
+      <li>
+        <a href="{{ url_for('student_dashboard') }}" class="{% if request.endpoint == 'student_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Mes Cours
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('student_courses') }}" class="{% if request.endpoint == 'student_courses' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          Catalogue
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('student_certificates') }}" class="{% if request.endpoint == 'student_certificates' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          Certificats
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar">{{ student.first_name[0]|upper if student else '?' }}</div>
+        <span class="nav-user-name">{{ student.first_name if student else '' }}</span>
+      </div>
+      <a href="{{ url_for('student_logout') }}" class="nav-logout">Déconnexion</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+</body>
+</html>

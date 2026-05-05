@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}Sessions{% endblock %}
+{% block page_title %}Sessions de Formation{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_session_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Date debut</th>
+          <th>Date fin</th>
+          <th>Places</th>
+          <th>Lieu</th>
+          <th>Langue</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        {% set pct = (s.spots_taken / s.spots_total * 100) if s.spots_total else 0 %}
+        <tr>
+          <td><strong>{{ s.title }}</strong></td>
+          <td class="text-sm">{{ s.start_date }}</td>
+          <td class="text-sm">{{ s.end_date }}</td>
+          <td>
+            <span class="badge {% if pct >= 80 %}badge-danger{% elif pct >= 50 %}badge-warning{% else %}badge-success{% endif %}">
+              {{ s.spots_taken }}/{{ s.spots_total }}
+            </span>
+          </td>
+          <td class="text-sm">{{ s.location }}</td>
+          <td>{{ s.lang|upper }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_session_edit', id=s.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_session_delete', id=s.id) }}" onsubmit="return confirm('Supprimer cette session ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted" style="text-align:center;padding:32px">Aucune session.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

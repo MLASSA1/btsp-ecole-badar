@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block title %}Étudiants{% endblock %}
+{% block page_title %}Étudiants{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Avatar</th>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Date inscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td>
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem">
+              {{ s.avatar_letter or s.first_name[0]|upper }}
+            </div>
+          </td>
+          <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+          <td class="text-sm">{{ s.email }}</td>
+          <td class="text-sm">{{ s.phone or '—' }}</td>
+          <td class="text-sm text-muted">{{ s.created_at[:16] if s.created_at else '—' }}</td>
+          <td>
+            <a href="{{ url_for('admin_student_progress', id=s.id) }}" class="btn btn-sm">Voir progrès</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-muted text-sm" style="text-align:center;padding:24px">Aucun étudiant inscrit.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

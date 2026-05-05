@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block title %}Témoignages{% endblock %}
+{% block page_title %}Témoignages{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_testimonial_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Promotion</th>
+          <th>Témoignage</th>
+          <th>Note</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in testimonials %}
+        <tr>
+          <td><strong>{{ t.name }}</strong></td>
+          <td class="text-sm text-muted">{{ t.promotion }}</td>
+          <td class="text-sm">{{ t.content[:60] }}{% if t.content|length > 60 %}...{% endif %}</td>
+          <td>{{ t.rating }}/5</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_testimonial_edit', id=t.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_testimonial_delete', id=t.id) }}" onsubmit="return confirm('Supprimer ce témoignage ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

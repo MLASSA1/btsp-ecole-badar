@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+{% block title %}Inscriptions{% endblock %}
+{% block page_title %}Inscriptions{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom Complet</th>
+          <th>Type</th>
+          <th>Entreprise</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Formation</th>
+          <th>Message</th>
+          <th>Date</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in inscriptions %}
+        <tr>
+          <td><strong>{{ i.prenom }} {{ i.nom }}</strong></td>
+          <td><span class="badge {% if i.inscription_type == 'corporate' %}badge-warning{% else %}badge-info{% endif %}">{{ 'Entreprise' if i.inscription_type == 'corporate' else 'Individuel' }}</span></td>
+          <td class="text-sm">{{ i.company_name if i.inscription_type == 'corporate' else '-' }}</td>
+          <td>{{ i.email }}</td>
+          <td>{{ i.telephone }}</td>
+          <td class="text-sm">{{ i.formation }}</td>
+          <td class="text-sm text-muted">{{ i.message[:40] if i.message else '-' }}{% if i.message and i.message|length > 40 %}...{% endif %}</td>
+          <td class="text-sm text-muted">{{ i.created_at[:16] }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_inscription_status', id=i.id) }}" style="display:inline">
+              <select name="status" onchange="this.form.submit()" style="padding:4px 8px;border-radius:6px;border:1px solid #E5E7EB;font-size:0.8rem;font-family:inherit;cursor:pointer;
+                {% if i.status == 'nouveau' %}background:#DBEAFE;color:#1E40AF{% elif i.status == 'contacte' %}background:#FEF3C7;color:#92400E{% elif i.status == 'inscrit' %}background:#DCFCE7;color:#166534{% elif i.status == 'refuse' %}background:#FEE2E2;color:#991B1B{% endif %}">
+                <option value="nouveau" {% if i.status == 'nouveau' %}selected{% endif %}>Nouveau</option>
+                <option value="contacte" {% if i.status == 'contacte' %}selected{% endif %}>Contacté</option>
+                <option value="inscrit" {% if i.status == 'inscrit' %}selected{% endif %}>Inscrit</option>
+                <option value="refuse" {% if i.status == 'refuse' %}selected{% endif %}>Refusé</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_inscription_delete', id=i.id) }}" onsubmit="return confirm('Supprimer cette inscription ?')">
+              <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-muted" style="text-align:center;padding:32px">Aucune inscription.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

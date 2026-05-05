@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if partner else "Ajouter" }} Partenaire{% endblock %}
+{% block page_title %}{{ "Modifier" if partner else "Nouveau" }} Partenaire{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_partners') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="name">Nom du partenaire</label>
+        <input type="text" id="name" name="name" required value="{{ partner.name if partner else '' }}" placeholder="Ex: Partenaire ABC">
+      </div>
+      <div class="form-group">
+        <label for="logo">Logo</label>
+        <input type="file" id="logo" name="logo" accept="image/*" {% if not partner %}required{% endif %}>
+        {% if partner and partner.logo %}
+          <div class="mt-2"><img src="{{ partner.logo }}" class="thumb" alt="" style="width:120px;height:80px"></div>
+        {% endif %}
+        <div class="help">Formats: JPG, PNG, WebP, SVG. Max 5 Mo.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="website_url">Site Web</label>
+          <input type="text" id="website_url" name="website_url" value="{{ partner.website_url if partner else '' }}" placeholder="https://www.exemple.com">
+        </div>
+        <div class="form-group">
+          <label for="sort_order">Ordre d'affichage</label>
+          <input type="number" id="sort_order" name="sort_order" value="{{ partner.sort_order if partner else 0 }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">{{ "Mettre a jour" if partner else "Ajouter le partenaire" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

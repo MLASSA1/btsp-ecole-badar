@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block title %}Galerie{% endblock %}
+{% block page_title %}Galerie{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_gallery_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Titre</th>
+          <th>Taille</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for img in images %}
+        <tr>
+          <td><img src="{{ img.image }}" class="thumb" alt="{{ img.title }}"></td>
+          <td><strong>{{ img.title }}</strong></td>
+          <td><span class="badge {% if img.large %}badge-info{% else %}badge-muted{% endif %}">{{ "Grande" if img.large else "Normale" }}</span></td>
+          <td>{{ img.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_gallery_edit', id=img.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_gallery_delete', id=img.id) }}" onsubmit="return confirm('Supprimer cette image ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

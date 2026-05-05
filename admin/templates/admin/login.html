@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion Admin - BTSP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1A1A1A 0%, #2D1B1E 50%, #1A1A2E 100%);
+    }
+    .login-card {
+      background: #fff; border-radius: 16px; padding: 48px 40px;
+      width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .login-brand {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-brand h1 {
+      font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1A1A1A;
+    }
+    .login-brand em { color: #C8963E; font-style: italic; }
+    .login-brand p { font-size: 0.85rem; color: #9A9A9A; margin-top: 8px; }
+    .flash {
+      padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;
+      font-size: 0.85rem; background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: #3D3D3D; }
+    .form-group input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid #E5E7EB; border-radius: 8px;
+      font-family: inherit; font-size: 0.95rem; outline: none; transition: 0.2s;
+    }
+    .form-group input:focus { border-color: #C8963E; box-shadow: 0 0 0 3px rgba(200,150,62,0.1); }
+    .btn-login {
+      width: 100%; padding: 14px; background: #1B2A4A; color: #fff; border: none;
+      border-radius: 8px; font-family: inherit; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: 0.2s;
+    }
+    .btn-login:hover { background: #0F1D36; }
+    .back-link { text-align: center; margin-top: 24px; }
+    .back-link a { font-size: 0.85rem; color: #9A9A9A; transition: 0.2s; }
+    .back-link a:hover { color: #C8963E; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-brand">
+      <h1>BTSP</h1>
+      <p>École BADAR Training and Service</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <div class="form-group">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" name="username" required placeholder="admin" autofocus>
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required placeholder="Votre mot de passe">
+      </div>
+      <button type="submit" class="btn-login">Se Connecter</button>
+    </form>
+    <div class="back-link">
+      <a href="{{ url_for('index_default') }}">Retour au site</a>
+    </div>
+  </div>
+</body>
+</html>

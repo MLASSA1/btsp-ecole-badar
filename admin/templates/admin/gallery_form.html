@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if image else "Ajouter" }} Image{% endblock %}
+{% block page_title %}{{ "Modifier" if image else "Nouvelle" }} Image{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_gallery') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="title">Titre de l'image</label>
+        <input type="text" id="title" name="title" required value="{{ image.title if image else '' }}" placeholder="Ex: Atelier Pâtisserie">
+      </div>
+      <div class="form-group">
+        <label for="image">Image</label>
+        <input type="file" id="image" name="image" accept="image/*" {% if not image %}required{% endif %}>
+        {% if image and image.image %}
+          <div class="mt-2"><img src="{{ image.image }}" class="thumb" alt="" style="width:120px;height:80px"></div>
+        {% endif %}
+        <div class="help">Formats: JPG, PNG, WebP, GIF, SVG. Max 5 Mo.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="sort_order">Ordre d'affichage</label>
+          <input type="number" id="sort_order" name="sort_order" value="{{ image.sort_order if image else 0 }}">
+        </div>
+        <div class="form-group">
+          <label class="form-check" style="margin-top:28px">
+            <input type="checkbox" name="large" {% if image and image.large %}checked{% endif %}>
+            Grande image (occupe 2 colonnes)
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="lang">Langue</label>
+        <select id="lang" name="lang">
+          <option value="fr" {% if image and image.lang == 'fr' %}selected{% endif %}>Français</option>
+          <option value="en" {% if image and image.lang == 'en' %}selected{% endif %}>English</option>
+          <option value="ar" {% if image and image.lang == 'ar' %}selected{% endif %}>العربية</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if image else "Ajouter l'image" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

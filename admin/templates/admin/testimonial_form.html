@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if testimonial else "Ajouter" }} Témoignage{% endblock %}
+{% block page_title %}{{ "Modifier" if testimonial else "Nouveau" }} Témoignage{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_testimonials') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Nom du diplômé</label>
+          <input type="text" id="name" name="name" required value="{{ testimonial.name if testimonial else '' }}" placeholder="Ex: Fatima Z.">
+        </div>
+        <div class="form-group">
+          <label for="promotion">Promotion</label>
+          <input type="text" id="promotion" name="promotion" required value="{{ testimonial.promotion if testimonial else '' }}" placeholder="Ex: Diplômée en Cake Design - 2024">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="content">Témoignage</label>
+        <textarea id="content" name="content" required rows="4" placeholder="Le témoignage du diplômé...">{{ testimonial.content if testimonial else '' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label for="rating">Note (1-5)</label>
+        <select id="rating" name="rating">
+          {% for i in range(5, 0, -1) %}
+          <option value="{{ i }}" {% if testimonial and testimonial.rating == i %}selected{% endif %}>{{ i }} / 5</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="lang">Langue</label>
+        <select id="lang" name="lang">
+          <option value="fr" {% if testimonial and testimonial.lang == 'fr' %}selected{% endif %}>Français</option>
+          <option value="en" {% if testimonial and testimonial.lang == 'en' %}selected{% endif %}>English</option>
+          <option value="ar" {% if testimonial and testimonial.lang == 'ar' %}selected{% endif %}>العربية</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if testimonial else "Ajouter le témoignage" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

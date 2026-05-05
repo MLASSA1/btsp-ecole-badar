@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if certificate else "Ajouter" }} Certificat{% endblock %}
+{% block page_title %}{{ "Modifier" if certificate else "Nouveau" }} Certificat{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_certificates') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-group">
+        <label for="title">Titre du certificat</label>
+        <input type="text" id="title" name="title" required value="{{ certificate.title if certificate else '' }}" placeholder="Ex: Certificat en Cake Design">
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" required rows="3" placeholder="Description du certificat...">{{ certificate.description if certificate else '' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label for="sort_order">Ordre d'affichage</label>
+        <input type="number" id="sort_order" name="sort_order" value="{{ certificate.sort_order if certificate else 0 }}">
+      </div>
+      <div class="form-group">
+        <label for="lang">Langue</label>
+        <select id="lang" name="lang">
+          <option value="fr" {% if certificate and certificate.lang == 'fr' %}selected{% endif %}>Français</option>
+          <option value="en" {% if certificate and certificate.lang == 'en' %}selected{% endif %}>English</option>
+          <option value="ar" {% if certificate and certificate.lang == 'ar' %}selected{% endif %}>العربية</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if certificate else "Ajouter le certificat" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

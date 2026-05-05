@@ -1,0 +1,140 @@
+{% extends "student/base.html" %}
+{% block title %}Catalogue{% endblock %}
+
+{% block content %}
+<style>
+  .page-header {
+    margin-bottom: 28px;
+  }
+  .page-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem; font-weight: 700; color: var(--dark);
+  }
+  .page-header p {
+    font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;
+  }
+  .catalog-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .catalog-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; transition: box-shadow 0.2s, transform 0.2s;
+    display: flex; flex-direction: column;
+  }
+  .catalog-card:hover {
+    box-shadow: var(--shadow-md); transform: translateY(-2px);
+  }
+  .catalog-card-img {
+    width: 100%; height: 200px; object-fit: cover;
+  }
+  .catalog-card-img-placeholder {
+    width: 100%; height: 200px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.3);
+  }
+  .catalog-card-img-placeholder svg { width: 48px; height: 48px; }
+  .catalog-card-body {
+    padding: 20px; flex: 1; display: flex; flex-direction: column;
+  }
+  .catalog-card-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .catalog-card-meta .meta-item {
+    font-size: 0.78rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .catalog-card-meta .meta-item svg { width: 14px; height: 14px; }
+  .catalog-card-body h3 {
+    font-size: 1.05rem; font-weight: 600; color: var(--dark);
+    margin-bottom: 8px;
+  }
+  .catalog-card-body .desc {
+    font-size: 0.85rem; color: var(--text-light);
+    line-height: 1.5; margin-bottom: 16px;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
+  }
+  .catalog-card-footer {
+    padding: 0 20px 20px; display: flex; gap: 8px;
+  }
+  .empty-catalog {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-catalog h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+
+  @media (max-width: 768px) {
+    .catalog-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="page-header">
+  <h1>Catalogue des Cours</h1>
+  <p>Decouvrez nos formations et inscrivez-vous</p>
+</div>
+
+{% if courses %}
+<div class="catalog-grid">
+  {% for c in courses %}
+  <div class="catalog-card">
+    {% if c.image %}
+      <img src="{{ c.image }}" alt="{{ c.title }}" class="catalog-card-img">
+    {% else %}
+      <div class="catalog-card-img-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+    {% endif %}
+    <div class="catalog-card-body">
+      <div class="catalog-card-meta">
+        {% if c.category == 'culinary' %}
+          <span class="badge badge-culinary">Culinaire</span>
+        {% elif c.category == 'it' %}
+          <span class="badge badge-it">IT</span>
+        {% elif c.category == 'hospitality' %}
+          <span class="badge badge-hospitality">Hotellerie</span>
+        {% else %}
+          <span class="badge badge-default">{{ c.category or 'Cours' }}</span>
+        {% endif %}
+        {% if c.duration %}
+        <span class="meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {{ c.duration }}
+        </span>
+        {% endif %}
+        {% if c.instructor %}
+        <span class="meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {{ c.instructor }}
+        </span>
+        {% endif %}
+      </div>
+      <h3>{{ c.title }}</h3>
+      {% if c.description %}
+        <p class="desc">{{ c.description }}</p>
+      {% endif %}
+    </div>
+    <div class="catalog-card-footer">
+      {% if c.id in enrolled_ids %}
+        <a href="{{ url_for('student_course', course_id=c.id) }}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">Voir le cours</a>
+      {% else %}
+        <form method="POST" action="{{ url_for('student_enroll', course_id=c.id) }}" style="flex:1;">
+          <button type="submit" class="btn btn-accent btn-sm btn-block">S'inscrire</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-catalog">
+  <h3>Aucun cours disponible pour le moment</h3>
+  <p>De nouveaux cours seront bientot disponibles. Revenez bientot !</p>
+</div>
+{% endif %}
+
+{% endblock %}

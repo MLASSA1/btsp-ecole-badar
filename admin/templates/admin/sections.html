@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}Sections{% endblock %}
+{% block page_title %}Sections Personnalisées{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_section_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<p class="text-muted text-sm mb-4">Ajoutez des sections personnalisées qui s'affichent entre les témoignages et le formulaire de contact sur le site public.</p>
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Titre</th>
+          <th>Clé</th>
+          <th>Animation</th>
+          <th>Langue</th>
+          <th>Statut</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sections %}
+        <tr>
+          <td>
+            {% if s.image %}
+              <img src="{{ s.image }}" class="thumb" alt="">
+            {% else %}
+              <div class="thumb-placeholder">IMG</div>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ s.title }}</strong>
+            {% if s.subtitle %}<br><span class="text-sm text-muted">{{ s.subtitle[:40] }}</span>{% endif %}
+          </td>
+          <td class="text-sm text-muted">{{ s.section_key }}</td>
+          <td><span class="badge badge-muted">{{ s.animation }}</span></td>
+          <td>{{ s.lang|upper }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_section_toggle', id=s.id) }}" style="display:inline">
+              <button type="submit" class="badge {% if s.active %}badge-success{% else %}badge-danger{% endif %}" style="cursor:pointer;border:none">
+                {{ "Actif" if s.active else "Inactif" }}
+              </button>
+            </form>
+          </td>
+          <td>{{ s.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_section_edit', id=s.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_section_delete', id=s.id) }}" onsubmit="return confirm('Supprimer cette section ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-muted" style="text-align:center;padding:32px">Aucune section personnalisée. Cliquez sur "+ Ajouter" pour en créer une.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

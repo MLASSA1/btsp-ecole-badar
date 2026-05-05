@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Partenaires{% endblock %}
+{% block page_title %}Partenaires{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_partner_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Logo</th>
+          <th>Nom</th>
+          <th>Site Web</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in partners %}
+        <tr>
+          <td>
+            {% if p.logo %}
+              <img src="{{ p.logo }}" class="thumb" alt="{{ p.name }}">
+            {% else %}
+              <div class="thumb-placeholder">IMG</div>
+            {% endif %}
+          </td>
+          <td><strong>{{ p.name }}</strong></td>
+          <td class="text-sm"><a href="{{ p.website_url }}" target="_blank">{{ p.website_url }}</a></td>
+          <td>{{ p.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_partner_edit', id=p.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_partner_delete', id=p.id) }}" onsubmit="return confirm('Supprimer ce partenaire ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted" style="text-align:center;padding:32px">Aucun partenaire.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

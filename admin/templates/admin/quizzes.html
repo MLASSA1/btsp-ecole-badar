@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+{% block title %}Quiz — {{ module.title }}{% endblock %}
+{% block page_title %}Quiz — {{ module.title }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_modules', course_id=module.course_id) }}" class="btn">Retour aux Modules</a>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Questions existantes</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Réponse correcte</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in quizzes %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ q.question[:80] }}{% if q.question|length > 80 %}...{% endif %}</td>
+          <td><span class="badge badge-success">{{ q.correct_answer|upper }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_quiz_delete', id=q.id) }}" onsubmit="return confirm('Supprimer cette question ?')">
+              <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not quizzes %}
+        <tr>
+          <td colspan="4" class="text-muted text-sm" style="text-align:center;padding:24px">Aucune question pour ce module.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Ajouter une question</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('admin_quizzes', module_id=module.id) }}">
+      <div class="form-group">
+        <label for="question">Question</label>
+        <input type="text" id="question" name="question" required placeholder="Entrez la question...">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="option_a">Option A</label>
+          <input type="text" id="option_a" name="option_a" required placeholder="Réponse A">
+        </div>
+        <div class="form-group">
+          <label for="option_b">Option B</label>
+          <input type="text" id="option_b" name="option_b" required placeholder="Réponse B">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="option_c">Option C</label>
+          <input type="text" id="option_c" name="option_c" required placeholder="Réponse C">
+        </div>
+        <div class="form-group">
+          <label for="option_d">Option D</label>
+          <input type="text" id="option_d" name="option_d" required placeholder="Réponse D">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="correct_answer">Réponse correcte</label>
+          <select id="correct_answer" name="correct_answer" required>
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+            <option value="d">D</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sort_order">Ordre</label>
+          <input type="number" id="sort_order" name="sort_order" value="0" min="0">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Ajouter</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

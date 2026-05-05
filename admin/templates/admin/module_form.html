@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if module else "Ajouter" }} Module{% endblock %}
+{% block page_title %}{{ "Modifier" if module else "Nouveau" }} Module{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_modules', course_id=course_id) }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-group">
+        <label for="title">Titre du module</label>
+        <input type="text" id="title" name="title" required value="{{ module.title if module else '' }}" placeholder="Ex: Introduction aux fondamentaux">
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="3" placeholder="Description du module...">{{ module.description if module else '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="video_url">URL Vidéo</label>
+          <input type="url" id="video_url" name="video_url" value="{{ module.video_url if module else '' }}" placeholder="URL Google Drive embed ou YouTube">
+          <div class="help">Pour Google Drive: Fichier &rarr; Partager &rarr; Intégrer, puis collez le lien src de l'iframe</div>
+        </div>
+        <div class="form-group">
+          <label for="materials_url">Lien supports</label>
+          <input type="url" id="materials_url" name="materials_url" value="{{ module.materials_url if module else '' }}" placeholder="Lien vers les supports">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="duration_minutes">Durée (minutes)</label>
+          <input type="number" id="duration_minutes" name="duration_minutes" value="{{ module.duration_minutes if module else 0 }}" min="0">
+        </div>
+        <div class="form-group">
+          <label for="sort_order">Ordre d'affichage</label>
+          <input type="number" id="sort_order" name="sort_order" value="{{ module.sort_order if module else 0 }}" min="0">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if module else "Ajouter le module" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

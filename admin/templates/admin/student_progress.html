@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block title %}Progrès — {{ student.first_name }} {{ student.last_name }}{% endblock %}
+{% block page_title %}Progrès — {{ student.first_name }} {{ student.last_name }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_students') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<!-- Cours inscrits -->
+<div class="card mb-4">
+  <div class="card-header">Cours inscrits</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Cours</th>
+          <th>Modules complétés</th>
+          <th>Progression</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in enrollments %}
+        <tr>
+          <td><strong>{{ e.course_title }}</strong></td>
+          <td class="text-sm">{{ e.completed_modules }} / {{ e.total_modules }}</td>
+          <td style="min-width:160px">
+            {% set pct = (e.completed_modules / e.total_modules * 100) if e.total_modules > 0 else 0 %}
+            <div style="background:var(--border);border-radius:50px;height:8px;overflow:hidden">
+              <div style="background:{% if pct == 100 %}var(--success){% else %}var(--gold){% endif %};width:{{ pct|int }}%;height:100%;border-radius:50px"></div>
+            </div>
+            <span class="text-sm text-muted">{{ pct|int }}%</span>
+          </td>
+          <td>
+            {% if e.completed_modules == e.total_modules and e.total_modules > 0 %}
+              <span class="badge badge-success">Terminé</span>
+            {% else %}
+              <span class="badge badge-warning">En cours</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not enrollments %}
+        <tr>
+          <td colspan="4" class="text-muted text-sm" style="text-align:center;padding:24px">Aucune inscription.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Résultats Quiz -->
+<div class="card mb-4">
+  <div class="card-header">Résultats Quiz</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Score</th>
+          <th>Réussi</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in quiz_results %}
+        <tr>
+          <td>{{ r.module_title }}</td>
+          <td><strong>{{ r.score }}</strong> / {{ r.total }}</td>
+          <td>
+            {% if r.passed %}
+              <span class="badge badge-success">Réussi</span>
+            {% else %}
+              <span class="badge badge-danger">Échoué</span>
+            {% endif %}
+          </td>
+          <td class="text-sm text-muted">{{ r.attempted_at[:16] if r.attempted_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% if not quiz_results %}
+        <tr>
+          <td colspan="4" class="text-muted text-sm" style="text-align:center;padding:24px">Aucun résultat de quiz.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Récompenses -->
+<div class="card">
+  <div class="card-header">Récompenses</div>
+  <div class="card-body">
+    {% if rewards %}
+      {% for r in rewards %}
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;{% if not loop.last %}border-bottom:1px solid var(--border){% endif %}">
+        <div style="width:40px;height:40px;border-radius:var(--radius);background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+          {{ r.icon if r.icon else '🏆' }}
+        </div>
+        <div>
+          <strong>{{ r.title }}</strong>
+          <div class="text-sm text-muted">{{ r.earned_at[:10] if r.earned_at else '' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted text-sm" style="text-align:center;padding:12px">Aucune récompense obtenue.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier" if course else "Ajouter" }} Cours{% endblock %}
+{% block page_title %}{{ "Modifier" if course else "Nouveau" }} Cours{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_courses') }}" class="btn">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Titre du cours</label>
+          <input type="text" id="title" name="title" required value="{{ course.title if course else '' }}" placeholder="Ex: Introduction au Cloud Computing">
+        </div>
+        <div class="form-group">
+          <label for="category">Catégorie</label>
+          <select id="category" name="category">
+            <option value="culinary" {% if course and course.category == 'culinary' %}selected{% endif %}>Culinaire</option>
+            <option value="it" {% if course and course.category == 'it' %}selected{% endif %}>IT & Technologies</option>
+            <option value="hospitality" {% if course and course.category == 'hospitality' %}selected{% endif %}>Hôtellerie</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4" placeholder="Description du cours...">{{ course.description if course else '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="duration">Durée</label>
+          <input type="text" id="duration" name="duration" value="{{ course.duration if course else '' }}" placeholder="Ex: 3 Mois">
+        </div>
+        <div class="form-group">
+          <label for="instructor">Instructeur</label>
+          <input type="text" id="instructor" name="instructor" value="{{ course.instructor if course else '' }}" placeholder="Nom de l'instructeur">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="meet_link">Lien Meet</label>
+          <input type="url" id="meet_link" name="meet_link" value="{{ course.meet_link if course else '' }}" placeholder="https://meet.google.com/xxx-xxx-xxx">
+        </div>
+        <div class="form-group">
+          <label for="lang">Langue</label>
+          <select id="lang" name="lang">
+            <option value="fr" {% if course and course.lang == 'fr' %}selected{% endif %}>Français</option>
+            <option value="en" {% if course and course.lang == 'en' %}selected{% endif %}>English</option>
+            <option value="ar" {% if course and course.lang == 'ar' %}selected{% endif %}>العربية</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="image">Image</label>
+          <input type="file" id="image" name="image" accept="image/*">
+          {% if course and course.image %}
+            <div class="mt-2"><img src="{{ course.image }}" class="thumb" alt=""></div>
+          {% endif %}
+        </div>
+        <div class="form-group"></div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if course else "Ajouter le cours" }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "student/base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<style>
+  .course-header {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 28px 32px; margin-bottom: 28px;
+  }
+  .course-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem; font-weight: 700; color: var(--dark);
+    margin-bottom: 12px;
+  }
+  .course-header .course-desc {
+    font-size: 0.9rem; color: var(--text-light); line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .course-meta {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .course-meta .meta-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.82rem; color: var(--text-muted);
+  }
+  .course-meta .meta-tag svg { width: 16px; height: 16px; }
+  .course-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .overall-progress {
+    margin-bottom: 8px;
+  }
+  .overall-progress-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;
+  }
+  .overall-progress-label strong { color: var(--dark); font-size: 1rem; }
+
+  /* Module list */
+  .modules-title {
+    font-size: 1.1rem; font-weight: 700; color: var(--dark);
+    margin-bottom: 16px;
+  }
+  .module-list {
+    list-style: none;
+  }
+  .module-item {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    transition: box-shadow 0.2s;
+  }
+  .module-item:hover { box-shadow: var(--shadow-md); }
+  .module-item a {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px; text-decoration: none; color: inherit;
+  }
+  .module-number {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .module-number.completed {
+    background: var(--success-light); color: var(--success);
+  }
+  .module-number.pending {
+    background: #F3F4F6; color: var(--text-muted);
+  }
+  .module-info { flex: 1; }
+  .module-info h3 {
+    font-size: 0.95rem; font-weight: 600; color: var(--dark);
+    margin-bottom: 2px;
+  }
+  .module-info .module-duration {
+    font-size: 0.8rem; color: var(--text-muted);
+  }
+  .module-status { flex-shrink: 0; }
+  .module-status svg { width: 22px; height: 22px; }
+  .module-status .check { color: var(--success); }
+  .module-status .circle { color: var(--border); }
+  .module-link-arrow {
+    color: var(--text-muted); flex-shrink: 0;
+  }
+  .module-link-arrow svg { width: 18px; height: 18px; }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: var(--text-muted);
+    margin-bottom: 20px; transition: 0.2s;
+  }
+  .back-link:hover { color: var(--primary); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  @media (max-width: 768px) {
+    .course-header { padding: 20px; }
+    .course-meta { gap: 10px; }
+  }
+</style>
+
+<a href="{{ url_for('student_dashboard') }}" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+  Retour aux cours
+</a>
+
+<!-- Course Header -->
+<div class="course-header">
+  <div class="course-meta">
+    {% if course.category == 'culinary' %}
+      <span class="badge badge-culinary">Culinaire</span>
+    {% elif course.category == 'it' %}
+      <span class="badge badge-it">IT</span>
+    {% elif course.category == 'hospitality' %}
+      <span class="badge badge-hospitality">Hotellerie</span>
+    {% else %}
+      <span class="badge badge-default">{{ course.category or 'Cours' }}</span>
+    {% endif %}
+    {% if course.duration %}
+    <span class="meta-tag">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      {{ course.duration }}
+    </span>
+    {% endif %}
+    {% if course.instructor %}
+    <span class="meta-tag">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      {{ course.instructor }}
+    </span>
+    {% endif %}
+  </div>
+
+  <h1>{{ course.title }}</h1>
+  {% if course.description %}
+    <p class="course-desc">{{ course.description }}</p>
+  {% endif %}
+
+  <!-- Overall Progress -->
+  {% set completed_count = progress.values()|selectattr('completed')|list|length if progress else 0 %}
+  {% set total_count = modules|length %}
+  {% set pct = ((completed_count / total_count * 100) | int) if total_count > 0 else 0 %}
+  <div class="overall-progress">
+    <div class="overall-progress-label">
+      <span>Progression</span>
+      <strong>{{ pct }}%</strong>
+    </div>
+    <div class="progress-bar" style="height:8px;">
+      <div class="progress-fill" style="width: {{ pct }}%"></div>
+    </div>
+  </div>
+
+  <div class="course-actions" style="margin-top:16px;">
+    {% if course.meet_link %}
+      <a href="{{ course.meet_link }}" target="_blank" class="btn btn-success btn-sm" style="background:#16A34A;border-color:#16A34A;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14"/><rect x="1" y="6" width="14" height="12" rx="2"/></svg>
+        Rejoindre le Live
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Module List -->
+<h2 class="modules-title">Modules ({{ total_count }})</h2>
+<ul class="module-list">
+  {% for m in modules %}
+  {% set is_completed = progress.get(m.id, {}).completed if progress and progress.get(m.id) else false %}
+  <li class="module-item">
+    <a href="{{ url_for('student_module', course_id=course.id, module_id=m.id) }}">
+      <div class="module-number {{ 'completed' if is_completed else 'pending' }}">
+        {% if is_completed %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+        {% else %}
+          {{ loop.index }}
+        {% endif %}
+      </div>
+      <div class="module-info">
+        <h3>{{ m.title }}</h3>
+        {% if m.duration_minutes %}
+          <span class="module-duration">{{ m.duration_minutes }} min</span>
+        {% endif %}
+      </div>
+      <div class="module-status">
+        {% if is_completed %}
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        {% else %}
+          <svg class="circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        {% endif %}
+      </div>
+      <div class="module-link-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Certificats{% endblock %}
+{% block page_title %}Certificats{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_certificate_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Titre</th>
+          <th>Description</th>
+          <th>Ordre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in certificates %}
+        <tr>
+          <td><strong>{{ c.title }}</strong></td>
+          <td class="text-sm text-muted">{{ c.description[:80] }}{% if c.description|length > 80 %}...{% endif %}</td>
+          <td>{{ c.sort_order }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_certificate_edit', id=c.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_certificate_delete', id=c.id) }}" onsubmit="return confirm('Supprimer ce certificat ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "admin/base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block page_title %}Paramètres du Site{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+
+  <div class="card mb-4">
+    <div class="card-header">Branding & Logo</div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom du site (court)</label>
+          <input type="text" name="setting_site_name" value="{{ settings.get('site_name', '') }}" placeholder="BTSP">
+        </div>
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input type="text" name="setting_site_name_full" value="{{ settings.get('site_name_full', '') }}" placeholder="École BADAR Training and Service">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Sous-titre / Slogan</label>
+        <input type="text" name="setting_site_tagline" value="{{ settings.get('site_tagline', '') }}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Logo (upload)</label>
+          <input type="file" name="logo_file" accept="image/*">
+          {% if settings.get('logo_url') %}
+            <div class="mt-2"><img src="{{ settings.get('logo_url') }}" style="height:50px;width:auto;border:1px solid #E5E7EB;border-radius:6px;padding:4px" alt="Logo actuel"></div>
+          {% endif %}
+          <div class="help">Formats: JPG, PNG, SVG, WebP. Max 5 Mo.</div>
+        </div>
+        <div class="form-group">
+          <label>Image arrière-plan Hero (upload)</label>
+          <input type="file" name="hero_bg_file" accept="image/*">
+          {% if settings.get('hero_bg_image') %}
+            <div class="mt-2"><img src="{{ settings.get('hero_bg_image') }}" style="height:50px;width:auto;border:1px solid #E5E7EB;border-radius:6px" alt="Hero BG"></div>
+          {% endif %}
+          <div class="help">Image de fond pour la section Hero. Laisser vide pour le dégradé par défaut.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Textes Hero (page d'accueil)</div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Titre Hero (FR)</label>
+          <input type="text" name="setting_hero_title_fr" value="{{ settings.get('hero_title_fr', 'Votre Avenir') }}">
+        </div>
+        <div class="form-group">
+          <label>Sous-titre Hero (FR)</label>
+          <input type="text" name="setting_hero_subtitle_fr" value="{{ settings.get('hero_subtitle_fr', 'Commence Ici') }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Titre Hero (EN)</label>
+          <input type="text" name="setting_hero_title_en" value="{{ settings.get('hero_title_en', 'Your Future') }}">
+        </div>
+        <div class="form-group">
+          <label>Sous-titre Hero (EN)</label>
+          <input type="text" name="setting_hero_subtitle_en" value="{{ settings.get('hero_subtitle_en', 'Starts Here') }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Titre Hero (AR)</label>
+          <input type="text" name="setting_hero_title_ar" value="{{ settings.get('hero_title_ar', 'مستقبلك') }}" dir="rtl">
+        </div>
+        <div class="form-group">
+          <label>Sous-titre Hero (AR)</label>
+          <input type="text" name="setting_hero_subtitle_ar" value="{{ settings.get('hero_subtitle_ar', 'يبدأ هنا') }}" dir="rtl">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Visibilité des Sections</div>
+    <div class="card-body">
+      <p class="text-sm text-muted" style="margin-bottom:16px">Activez ou désactivez les sections principales du site public.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+        <label class="form-check"><input type="checkbox" name="setting_show_hero" value="1" {% if settings.get('show_hero', '1') == '1' %}checked{% endif %}> Hero</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_about" value="1" {% if settings.get('show_about', '1') == '1' %}checked{% endif %}> À Propos</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_services" value="1" {% if settings.get('show_services', '1') == '1' %}checked{% endif %}> Services B2B</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_formations" value="1" {% if settings.get('show_formations', '1') == '1' %}checked{% endif %}> Formations</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_certificates" value="1" {% if settings.get('show_certificates', '1') == '1' %}checked{% endif %}> Certificats</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_gallery" value="1" {% if settings.get('show_gallery', '1') == '1' %}checked{% endif %}> Galerie</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_testimonials" value="1" {% if settings.get('show_testimonials', '1') == '1' %}checked{% endif %}> Témoignages</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_contact" value="1" {% if settings.get('show_contact', '1') == '1' %}checked{% endif %}> Contact</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Section À Propos</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>Titre</label>
+        <input type="text" name="setting_about_title" value="{{ settings.get('about_title', '') }}">
+      </div>
+      <div class="form-group">
+        <label>Texte principal</label>
+        <textarea name="setting_about_text" rows="3">{{ settings.get('about_text', '') }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Texte secondaire</label>
+        <textarea name="setting_about_text_2" rows="2">{{ settings.get('about_text_2', '') }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Années d'expérience</label>
+        <input type="text" name="setting_years_experience" value="{{ settings.get('years_experience', '') }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Statistiques (Hero)</div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de diplômés</label>
+          <input type="text" name="setting_stat_diplomes" value="{{ settings.get('stat_diplomes', '') }}" placeholder="500+">
+        </div>
+        <div class="form-group">
+          <label>Nombre de formations</label>
+          <input type="text" name="setting_stat_formations" value="{{ settings.get('stat_formations', '') }}" placeholder="15+">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Taux de réussite</label>
+        <input type="text" name="setting_stat_reussite" value="{{ settings.get('stat_reussite', '') }}" placeholder="98%">
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Services B2B / Corporate</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>Titre des services</label>
+        <input type="text" name="setting_services_title" value="{{ settings.get('services_title', '') }}">
+      </div>
+      <div class="form-group">
+        <label>Description des services</label>
+        <textarea name="setting_services_text" rows="3">{{ settings.get('services_text', '') }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Contact</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>Adresse</label>
+        <input type="text" name="setting_address" value="{{ settings.get('address', '') }}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="text" name="setting_phone" value="{{ settings.get('phone', '') }}">
+        </div>
+        <div class="form-group">
+          <label>Téléphone 2</label>
+          <input type="text" name="setting_phone_2" value="{{ settings.get('phone_2', '') }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="text" name="setting_email" value="{{ settings.get('email', '') }}">
+      </div>
+      <div class="form-group">
+        <label>Horaires</label>
+        <input type="text" name="setting_hours" value="{{ settings.get('hours', '') }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Réseaux Sociaux</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>Facebook URL</label>
+        <input type="text" name="setting_facebook_url" value="{{ settings.get('facebook_url', '') }}">
+      </div>
+      <div class="form-group">
+        <label>Instagram URL</label>
+        <input type="text" name="setting_instagram_url" value="{{ settings.get('instagram_url', '') }}">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp URL</label>
+        <input type="text" name="setting_whatsapp_url" value="{{ settings.get('whatsapp_url', '') }}">
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Sauvegarder les Paramètres</button>
+</form>
+{% endblock %}

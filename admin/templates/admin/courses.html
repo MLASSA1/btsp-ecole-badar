@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}Cours{% endblock %}
+{% block page_title %}Cours{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_course_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Titre</th>
+          <th>Catégorie</th>
+          <th>Durée</th>
+          <th>Instructeur</th>
+          <th>Lien Meet</th>
+          <th>Langue</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in courses %}
+        <tr>
+          <td>
+            {% if c.image %}
+              <img src="{{ c.image }}" class="thumb" alt="{{ c.title }}">
+            {% else %}
+              <div class="thumb-placeholder">IMG</div>
+            {% endif %}
+          </td>
+          <td><strong>{{ c.title }}</strong></td>
+          <td>
+            <span class="badge {% if c.category == 'it' %}badge-info{% elif c.category == 'hospitality' %}badge-warning{% else %}badge-muted{% endif %}">{{ c.category }}</span>
+          </td>
+          <td>{{ c.duration }}</td>
+          <td>{{ c.instructor }}</td>
+          <td>
+            {% if c.meet_link %}
+              <a href="{{ c.meet_link }}" target="_blank" class="text-sm" style="color:var(--info)">Ouvrir</a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>{{ c.lang|upper }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_modules', course_id=c.id) }}" class="btn btn-sm btn-gold">Modules</a>
+              <a href="{{ url_for('admin_course_edit', id=c.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_course_delete', id=c.id) }}" onsubmit="return confirm('Supprimer ce cours ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
