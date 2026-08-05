@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block title %}Enseignants{% endblock %}
+{% block page_title %}Enseignants{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_teacher_add') }}" class="btn btn-primary">+ Ajouter</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span>{{ teachers|length }} enseignant{{ 's' if teachers|length > 1 else '' }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Spécialité</th>
+          <th>Contact</th>
+          <th>Classes</th>
+          <th>Élèves</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in teachers %}
+        <tr>
+          <td>
+            <strong>{{ t.first_name }} {{ t.last_name }}</strong>
+          </td>
+          <td>{{ t.specialty or '—' }}</td>
+          <td class="text-sm">
+            {{ t.phone or '—' }}
+            {% if t.email %}<br><span class="text-muted">{{ t.email }}</span>{% endif %}
+          </td>
+          <td><span class="badge badge-info">{{ t.class_count }}</span></td>
+          <td><span class="badge badge-muted">{{ t.student_count }}</span></td>
+          <td>
+            {% if t.active %}<span class="badge badge-success">Actif</span>
+            {% else %}<span class="badge badge-muted">Inactif</span>{% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_teacher_edit', id=t.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_teacher_delete', id=t.id) }}"
+                    onsubmit="return confirm('Supprimer cet enseignant ? Ses classes resteront mais sans responsable.')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:40px" class="text-muted">
+          Aucun enseignant. Commencez par en ajouter un.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

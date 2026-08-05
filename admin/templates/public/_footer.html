@@ -1,0 +1,179 @@
+{# Shared footer + WhatsApp button + the JS every public page needs.
+   Expects: settings, t, lang, home_url, nav_prefix, formations #}
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="{{ home_url }}" class="brand brand--footer">
+          <span class="brand-mark">
+            <img src="{{ settings.get('logo_url', '/uploads/logo.jpeg') }}" alt="{{ settings.get('site_name', 'BTSP') }}"
+                 onerror="this.closest('.brand-mark').classList.add('is-fallback'); this.remove();">
+            <span class="brand-mono">B</span>
+          </span>
+          <span class="brand-text">
+            <strong>{{ settings.get('site_name', 'BTSP') }}</strong>
+            <em>{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</em>
+          </span>
+        </a>
+        <p>{{ t.footer_tagline }}</p>
+        <div class="footer-contact">
+          <span>{{ settings.get('address', '') }}</span>
+          <span>{{ settings.get('phone', '') }}{% if settings.get('phone_2') %} / {{ settings.get('phone_2') }}{% endif %}</span>
+          <span>{{ settings.get('email', '') }}</span>
+        </div>
+        <div class="social-links">
+          {% if settings.get('facebook_url') and settings.get('facebook_url') != '#' %}<a href="{{ settings.get('facebook_url', '#') }}" class="social-link" aria-label="Facebook"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>{% endif %}
+          {% if settings.get('instagram_url') and settings.get('instagram_url') != '#' %}<a href="{{ settings.get('instagram_url', '#') }}" class="social-link" aria-label="Instagram"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>{% endif %}
+          {% if settings.get('whatsapp_url') and settings.get('whatsapp_url') != '#' %}<a href="{{ settings.get('whatsapp_url', '#') }}" class="social-link" aria-label="WhatsApp"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>{% endif %}
+        </div>
+      </div>
+      <div class="footer-links">
+        <h4>{{ t.footer_quick_links }}</h4>
+        <ul>
+          <li><a href="{{ nav_prefix }}#accueil">{{ t.nav_home }}</a></li>
+          <li><a href="{{ nav_prefix }}#poles">{{ t.pillars_tag }}</a></li>
+          <li><a href="{{ nav_prefix }}#formations">{{ t.nav_formations }}</a></li>
+          <li><a href="{{ nav_prefix }}#admission">{{ t.process_tag }}</a></li>
+          <li><a href="{{ nav_prefix }}#contact">{{ t.nav_register }}</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>{{ t.nav_pro }}</h4>
+        <ul>
+          <li><a href="{{ nav_prefix }}#services">{{ t.pro_1_title }}</a></li>
+          <li><a href="{{ nav_prefix }}#services">{{ t.pro_2_title }}</a></li>
+          <li><a href="{{ nav_prefix }}#services">{{ t.pro_3_title }}</a></li>
+          <li><a href="{{ nav_prefix }}#services">{{ t.pro_4_title }}</a></li>
+          <li><a href="{{ nav_prefix }}#pro-contact">{{ t.btn_corporate_contact }}</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>{{ t.footer_formations }}</h4>
+        <ul>
+          {% for f in formations[:5] %}
+          <li><a href="{{ '/formation/' if lang == 'fr' else '/' + lang + '/formation/' }}{{ f.id }}">{{ f.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 {{ settings.get('site_name_full', 'École BADAR Training and Service') }}. {{ t.footer_rights }}</p>
+      <div class="footer-bottom-links">
+        <a href="/student/login">{{ t.nav_student_space }}</a>
+        <a href="#">{{ t.footer_legal }}</a>
+        <a href="#">{{ t.footer_privacy }}</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<a href="{{ settings.get('whatsapp_url', 'https://wa.me/212637486276') }}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<script>
+  const T = {
+    form_sending: {{ t.form_sending|tojson }},
+    form_success: {{ t.form_success|tojson }},
+    form_error: {{ t.form_error|tojson }},
+    form_network_error: {{ t.form_network_error|tojson }},
+    form_submit: {{ t.form_submit|tojson }},
+    form_corporate_submit: {{ t.form_corporate_submit|tojson }},
+    proposal_submit: {{ t.proposal_submit|tojson }},
+    btn_apply: {{ t.btn_apply|tojson }}
+  };
+
+  // Header state on scroll
+  const navbar = document.getElementById('navbar');
+  const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 40);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Mobile drawer
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.getElementById('navLinks');
+  navToggle.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('active');
+    navToggle.classList.toggle('active', open);
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+  navLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+    navLinks.classList.remove('active');
+    navToggle.classList.remove('active');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }));
+
+  // Smooth scroll for same-page anchors only
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      const href = this.getAttribute('href');
+      if (href === '#') return;
+      const target = document.querySelector(href);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Scroll reveal. The hidden state lives behind .has-reveal on <html>, so it is
+  // only ever applied when we know an observer is available to undo it.
+  if ('IntersectionObserver' in window) {
+    document.documentElement.classList.add('has-reveal');
+    var revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) { entry.target.classList.add('revealed'); revealObserver.unobserve(entry.target); }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -60px 0px' });
+    document.querySelectorAll('.custom-section').forEach(sec => {
+      const inner = sec.querySelector('.custom-section-content');
+      if (inner) inner.setAttribute('data-anim', sec.dataset.animation || 'fade-up');
+      const img = sec.querySelector('.custom-section-image');
+      if (img) img.setAttribute('data-anim', 'slide-left');
+    });
+    document.querySelectorAll('.pillar-card, .formation-card, .pro-card, .process-step, .cert-item, .testimonial-card, .gallery-item, .session-card, .about-content, .about-images, .contact-info, .contact-form-wrapper, .custom-section-content, .custom-section-image, .module-item, .outcome-item, .spec-row')
+      .forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--i', i % 4); revealObserver.observe(el); });
+  }
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const open = btn.parentElement.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+
+  // Async form submission
+  function handleFormSubmit(form, endpoint, submitText) {
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      const formData = new FormData(this);
+      btn.disabled = true;
+      btn.textContent = T.form_sending;
+      fetch(endpoint, { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            btn.textContent = T.form_success;
+            btn.classList.add('is-success');
+            form.reset();
+          } else {
+            btn.textContent = data.error || T.form_error;
+            btn.classList.add('is-error');
+          }
+        })
+        .catch(() => {
+          btn.textContent = T.form_network_error;
+          btn.classList.add('is-error');
+        })
+        .finally(() => {
+          setTimeout(() => {
+            btn.textContent = submitText;
+            btn.classList.remove('is-success', 'is-error');
+            btn.disabled = false;
+          }, 3000);
+        });
+    });
+  }
+</script>

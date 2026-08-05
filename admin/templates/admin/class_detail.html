@@ -1,0 +1,152 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ klass.name }}{% endblock %}
+{% block page_title %}{{ klass.name }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_pupil_add', class_id=klass.id) }}" class="btn btn-accent">+ Ajouter un élève</a>
+  <a href="{{ url_for('admin_class_edit', id=klass.id) }}" class="btn btn-sm">Modifier la classe</a>
+  <a href="{{ url_for('admin_classes') }}" class="btn btn-sm">Retour</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ students|length }}</div>
+      <div class="stat-label">Élèves inscrits</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ paid_count }}</div>
+      <div class="stat-label">Ont payé ce mois</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ unpaid_count }}</div>
+      <div class="stat-label">En attente</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(collected) }}</div>
+      <div class="stat-label">MAD encaissés</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>Informations de la classe</span></div>
+  <div class="card-body">
+    <div class="form-row">
+      <div>
+        <div class="stat-label">Enseignant responsable</div>
+        {% if klass.teacher_first %}
+          <p style="margin-top:6px"><strong>{{ klass.teacher_first }} {{ klass.teacher_last }}</strong></p>
+          <p class="text-sm text-muted">
+            {{ klass.teacher_specialty or '' }}
+            {% if klass.teacher_phone %}<br>{{ klass.teacher_phone }}{% endif %}
+            {% if klass.teacher_email %}<br>{{ klass.teacher_email }}{% endif %}
+          </p>
+        {% else %}
+          <p style="margin-top:6px"><span class="badge badge-warning">Aucun responsable assigné</span></p>
+        {% endif %}
+      </div>
+      <div>
+        <div class="stat-label">Détails</div>
+        <p class="text-sm" style="margin-top:6px">
+          Formation : <strong>{{ klass.formation_title or '—' }}</strong><br>
+          Frais mensuels : <strong>{{ '%.0f'|format(klass.monthly_fee or 0) }} MAD</strong><br>
+          Année : {{ klass.academic_year or '—' }}<br>
+          Salle : {{ klass.room or '—' }}{% if klass.schedule %} — {{ klass.schedule }}{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span>Élèves &amp; paiement — {{ months[month - 1] }} {{ year }}</span>
+    <form method="GET" class="flex gap-2 items-center">
+      <select name="month" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
+        {% for m in months %}
+        <option value="{{ loop.index }}" {% if loop.index == month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <input type="number" name="year" value="{{ year }}" onchange="this.form.submit()"
+             style="width:100px;padding:8px 12px">
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Élève</th>
+          <th>Téléphone</th>
+          <th>Montant dû</th>
+          <th>Statut {{ months[month - 1] }}</th>
+          <th>Payé le</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        {% set due = s.monthly_fee or klass.monthly_fee or 0 %}
+        <tr>
+          <td>
+            <strong>{{ s.first_name }} {{ s.last_name }}</strong>
+            <br><a href="{{ url_for('admin_pupil_edit', id=s.id) }}" class="text-sm text-muted">Fiche élève</a>
+          </td>
+          <td class="text-sm">{{ s.phone or s.guardian_phone or '—' }}</td>
+          <td>{{ '%.0f'|format(due) }} MAD</td>
+          <td>
+            {% if s.status == 'paid' %}
+              <span class="badge badge-success">Payé</span>
+            {% else %}
+              <span class="badge badge-danger">Non payé</span>
+            {% endif %}
+          </td>
+          <td class="text-sm text-muted">{{ s.paid_on or '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_payment_mark') }}">
+              <input type="hidden" name="student_id" value="{{ s.id }}">
+              <input type="hidden" name="class_id" value="{{ klass.id }}">
+              <input type="hidden" name="year" value="{{ year }}">
+              <input type="hidden" name="month" value="{{ month }}">
+              <input type="hidden" name="redirect_to" value="class">
+              {% if s.status == 'paid' %}
+                <input type="hidden" name="action" value="unpaid">
+                <button type="submit" class="btn btn-sm">Annuler</button>
+              {% else %}
+                <input type="hidden" name="action" value="paid">
+                <input type="hidden" name="amount" value="{{ due }}">
+                <button type="submit" class="btn btn-sm btn-success">Marquer payé</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:40px" class="text-muted">
+          Aucun élève dans cette classe.
+          <a href="{{ url_for('admin_pupil_add', class_id=klass.id) }}">Ajouter le premier élève</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

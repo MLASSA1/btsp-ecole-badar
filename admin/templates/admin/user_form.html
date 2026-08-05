@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier le compte" if user else "Nouveau compte" }}{% endblock %}
+{% block page_title %}{{ "Modifier le compte" if user else "Nouveau compte" }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_users') }}" class="btn btn-sm">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:680px">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-group">
+        <label for="username">Nom d'utilisateur</label>
+        {% if user %}
+          <input type="text" id="username" value="{{ user.username }}" disabled>
+          <div class="help">Le nom d'utilisateur ne peut pas être modifié.</div>
+        {% else %}
+          <input type="text" id="username" name="username" required autocomplete="off">
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="full_name">Nom complet</label>
+        <input type="text" id="full_name" name="full_name"
+               value="{{ user.full_name if user else '' }}" placeholder="Ex : Fatima Elomari">
+      </div>
+
+      <div class="form-group">
+        <label for="role">Rôle</label>
+        <select id="role" name="role">
+          <option value="school" {% if user and user.role != 'super' %}selected{% endif %}>
+            Personnel école — section École uniquement
+          </option>
+          <option value="super" {% if user and user.role == 'super' %}selected{% endif %}>
+            Administrateur du site — accès complet
+          </option>
+        </select>
+        <div class="help">
+          Le personnel école ne voit que les inscriptions, enseignants, classes, élèves et paiements.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">{{ "Nouveau mot de passe" if user else "Mot de passe" }}</label>
+        <input type="password" id="password" name="password" {% if not user %}required{% endif %}
+               autocomplete="new-password">
+        {% if user %}<div class="help">Laissez vide pour conserver le mot de passe actuel.</div>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        {{ "Mettre à jour" if user else "Créer le compte" }}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

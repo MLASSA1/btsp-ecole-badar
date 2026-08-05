@@ -1,0 +1,60 @@
+{# Shared top bar + navigation.
+   Expects: settings, t, lang, supported_langs, home_url, nav_prefix
+   nav_prefix is '' on the landing page (plain #anchors) and the home URL
+   elsewhere, so the same links work from a sub-page. #}
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-contact">
+      <a href="tel:{{ settings.get('phone', '')|replace('.', '')|replace(' ', '') }}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        {{ settings.get('phone', '') }}
+      </a>
+      <a href="mailto:{{ settings.get('email', '') }}" class="topbar-hide-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        {{ settings.get('email', '') }}
+      </a>
+      <span class="topbar-note topbar-hide-md">{{ t.topbar_note }}</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-switcher">
+        {% for l in supported_langs %}
+          <a href="{{ '/' if l == 'fr' else '/' + l + '/' }}" class="{% if l == lang %}active{% endif %}" hreflang="{{ l }}">{{ l|upper }}</a>
+        {% endfor %}
+      </div>
+      <a href="/student/login" class="topbar-portal">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        {{ t.nav_student_space }}
+      </a>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="{{ home_url }}" class="brand">
+      <span class="brand-mark">
+        <img src="{{ settings.get('logo_url', '/uploads/logo.jpeg') }}" alt="{{ settings.get('site_name', 'BTSP') }}"
+             onerror="this.closest('.brand-mark').classList.add('is-fallback'); this.remove();">
+        <span class="brand-mono">B</span>
+      </span>
+      <span class="brand-text">
+        <strong>{{ settings.get('site_name', 'BTSP') }}</strong>
+        <em>{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</em>
+      </span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="{{ nav_prefix }}#accueil">{{ t.nav_home }}</a></li>
+      <li><a href="{{ nav_prefix }}#poles">{{ t.pillars_tag }}</a></li>
+      <li><a href="{{ nav_prefix }}#formations">{{ t.nav_formations }}</a></li>
+      <li><a href="{{ nav_prefix }}#en-ligne">{{ t.nav_online }}</a></li>
+      <li><a href="{{ nav_prefix }}#services">{{ t.nav_pro }}</a></li>
+      <li><a href="{{ nav_prefix }}#certificats">{{ t.nav_certificates }}</a></li>
+      <li><a href="{{ nav_prefix }}#galerie">{{ t.nav_gallery }}</a></li>
+      <li class="nav-links-cta"><a href="{{ nav_prefix }}#contact" class="btn btn-accent btn-sm">{{ t.nav_register }}</a></li>
+      <li class="nav-links-portal"><a href="/student/login">{{ t.nav_student_space }}</a></li>
+    </ul>
+  </div>
+</nav>

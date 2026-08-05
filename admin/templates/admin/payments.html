@@ -1,0 +1,141 @@
+{% extends "admin/base.html" %}
+{% block title %}Paiements mensuels{% endblock %}
+{% block page_title %}Paiements — {{ months[month - 1] }} {{ year }}{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ paid_count }}</div>
+      <div class="stat-label">Ont payé</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ unpaid_count }}</div>
+      <div class="stat-label">N'ont pas payé</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(total_collected) }}</div>
+      <div class="stat-label">MAD encaissés</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(total_due - total_collected) }}</div>
+      <div class="stat-label">MAD restants</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span>Suivi du mois</span>
+    <form method="GET" class="flex gap-2 items-center">
+      <select name="month" style="width:auto;padding:8px 12px">
+        {% for m in months %}
+        <option value="{{ loop.index }}" {% if loop.index == month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      <select name="year" style="width:auto;padding:8px 12px">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+      <select name="class_id" style="width:auto;padding:8px 12px">
+        <option value="">Toutes les classes</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if class_filter == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" style="width:auto;padding:8px 12px">
+        <option value="">Tous</option>
+        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Ont payé</option>
+        <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>N'ont pas payé</option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary">Afficher</button>
+    </form>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Élève</th>
+          <th>Classe</th>
+          <th>Enseignant</th>
+          <th>Montant dû</th>
+          <th>Statut</th>
+          <th>Payé le</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pupils %}
+        {% set s = p.row %}
+        <tr>
+          <td>
+            <strong>{{ s.first_name }} {{ s.last_name }}</strong>
+            {% if s.phone %}<br><span class="text-sm text-muted">{{ s.phone }}</span>{% endif %}
+          </td>
+          <td class="text-sm">
+            {% if s.class_name %}
+              <a href="{{ url_for('admin_class_detail', id=s.class_id, year=year, month=month) }}">{{ s.class_name }}</a>
+            {% else %}<span class="badge badge-warning">Sans classe</span>{% endif %}
+          </td>
+          <td class="text-sm">
+            {% if s.teacher_first %}{{ s.teacher_first }} {{ s.teacher_last }}{% else %}—{% endif %}
+          </td>
+          <td>{{ '%.0f'|format(p.due) }} MAD</td>
+          <td>
+            {% if p.paid %}
+              <span class="badge badge-success">Payé</span>
+            {% else %}
+              <span class="badge badge-danger">Non payé</span>
+            {% endif %}
+          </td>
+          <td class="text-sm text-muted">{{ s.paid_on or '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_payment_mark') }}" class="flex gap-2 items-center">
+              <input type="hidden" name="student_id" value="{{ s.id }}">
+              <input type="hidden" name="year" value="{{ year }}">
+              <input type="hidden" name="month" value="{{ month }}">
+              <input type="hidden" name="class_id_filter" value="{{ class_filter or '' }}">
+              <input type="hidden" name="status_filter" value="{{ status_filter or '' }}">
+              {% if p.paid %}
+                <input type="hidden" name="action" value="unpaid">
+                <button type="submit" class="btn btn-sm">Annuler</button>
+              {% else %}
+                <input type="hidden" name="action" value="paid">
+                <input type="number" name="amount" value="{{ '%.0f'|format(p.due) }}" min="0" step="50"
+                       style="width:100px;padding:8px 10px" aria-label="Montant">
+                <button type="submit" class="btn btn-sm btn-success">Payé</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:40px" class="text-muted">
+          Aucun élève à afficher. Créez une classe puis ajoutez des élèves.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

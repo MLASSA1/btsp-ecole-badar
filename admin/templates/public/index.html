@@ -1,80 +1,154 @@
+{% set home_url = '/' if lang == 'fr' else '/' + lang + '/' %}
+{% set nav_prefix = '' %}
+{% set formation_url_base = '/formation/' if lang == 'fr' else '/' + lang + '/formation/' %}
 <!DOCTYPE html>
 <html lang="{{ lang }}" dir="{{ 'rtl' if lang == 'ar' else 'ltr' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ settings.get('site_name', 'BTSP') }} - {{ settings.get('site_name_full', 'École BADAR Training and Service') }}</title>
+  <title>{{ settings.get('site_name', 'BTSP') }} — {{ settings.get('site_name_full', 'École BADAR Training and Service') }}</title>
   <meta name="description" content="{{ settings.get('site_tagline', '') }}">
+  <meta name="theme-color" content="#0A2A63">
+  <meta property="og:title" content="{{ settings.get('site_name_full', 'BTSP') }}">
+  <meta property="og:description" content="{{ settings.get('site_tagline', '') }}">
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% if lang == 'ar' %}
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}
   <link rel="stylesheet" href="/static-site/style.css">
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="{{ '/' if lang == 'fr' else '/' + lang + '/' }}" class="nav-logo">
-        <img src="{{ settings.get('logo_url', '/uploads/logo.jpeg') }}" alt="BTSP" class="nav-logo-img">
-        <span class="logo-text">{{ settings.get('site_name', 'BTSP') }}</span>
-      </a>
-      <div class="lang-switcher">
-        {% for l in supported_langs %}
-          <a href="{{ '/' if l == 'fr' else '/' + l + '/' }}" class="{% if l == lang %}active{% endif %}">{{ l|upper }}</a>
-        {% endfor %}
-      </div>
-      <button class="nav-toggle" id="navToggle" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#accueil">{{ t.nav_home }}</a></li>
-        <li><a href="#apropos">{{ t.nav_about }}</a></li>
-        <li><a href="#services">{{ t.nav_services }}</a></li>
-        <li><a href="#formations">{{ t.nav_formations }}</a></li>
-        <li><a href="#certificats">{{ t.nav_certificates }}</a></li>
-        <li><a href="#galerie">{{ t.nav_gallery }}</a></li>
-        <li><a href="#contact" class="nav-cta">{{ t.nav_register }}</a></li>
-        <li><a href="/student/login" class="nav-cta" style="background:var(--color-primary);margin-left:4px">Espace Étudiant</a></li>
-      </ul>
-    </div>
-  </nav>
+  <a href="#accueil" class="skip-link">{{ t.nav_home }}</a>
+
+  {% include 'public/_header.html' %}
 
   <!-- Hero -->
   {% if settings.get('show_hero', '1') == '1' %}
-  <section class="hero" id="accueil" {% if settings.get('hero_bg_image') %}style="background:linear-gradient(135deg, rgba(26,26,26,0.8), rgba(27,42,74,0.7)), url('{{ settings.get('hero_bg_image') }}') center/cover no-repeat"{% endif %}>
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <span class="hero-badge">{{ settings.get('site_tagline', t.get('hero_badge', '')) }}</span>
-      <h1>{{ hero_title }} <br><em>{{ hero_subtitle }}</em></h1>
-      <p>{{ t.hero_text }}</p>
-      <div class="hero-buttons">
-        <a href="#formations" class="btn btn-primary">{{ t.btn_discover }}</a>
-        <a href="#contact" class="btn btn-outline">{{ t.btn_register }}</a>
+  <section class="hero" id="accueil">
+    <div class="hero-grid">
+      <div class="hero-panel">
+        <div class="hero-panel-inner">
+          {# Per-language tagline if the admin set one, else the French tagline on /
+             and the translated wording on the other locales. #}
+          <span class="hero-badge">{{ settings.get('site_tagline_' + lang) or (settings.get('site_tagline', t.hero_badge) if lang == 'fr' else t.hero_badge) }}</span>
+          <h1>{{ hero_title }}<br><em>{{ hero_subtitle }}</em></h1>
+          <p class="hero-lead">{{ t.hero_text }}</p>
+          <ul class="hero-points">
+            <li>{{ t.hero_point_1 }}</li>
+            <li>{{ t.hero_point_2 }}</li>
+            <li>{{ t.hero_point_3 }}</li>
+            <li>{{ t.hero_point_4 }}</li>
+          </ul>
+          <div class="hero-buttons">
+            <a href="#formations" class="btn btn-accent">{{ t.btn_discover }}</a>
+            <a href="#services" class="btn btn-ghost">{{ t.btn_pro_services }}</a>
+          </div>
+        </div>
       </div>
-      <div class="hero-stats">
+      <div class="hero-media" {% if settings.get('hero_bg_image') %}style="background-image:url('{{ settings.get('hero_bg_image') }}')"{% endif %}></div>
+    </div>
+    <div class="hero-stats">
+      <div class="container hero-stats-inner">
         <div class="stat">
           <span class="stat-number">{{ settings.get('stat_diplomes', '500+') }}</span>
           <span class="stat-label">{{ t.stat_graduates_label }}</span>
         </div>
-        <div class="stat-divider"></div>
         <div class="stat">
           <span class="stat-number">{{ settings.get('stat_formations', '15+') }}</span>
           <span class="stat-label">{{ t.stat_programs_label }}</span>
         </div>
-        <div class="stat-divider"></div>
         <div class="stat">
           <span class="stat-number">{{ settings.get('stat_reussite', '98%') }}</span>
           <span class="stat-label">{{ t.stat_success_label }}</span>
         </div>
+        <div class="stat">
+          <span class="stat-number">{{ settings.get('years_experience', '12') }}</span>
+          <span class="stat-label">{{ t.years_exp_label }}</span>
+        </div>
       </div>
     </div>
-    <div class="hero-scroll">
-      <span>{{ t.scroll_text }}</span>
-      <div class="scroll-line"></div>
+  </section>
+  {% endif %}
+
+  <!-- Pôles / Schools -->
+  {% if settings.get('show_pillars', '1') == '1' %}
+  <section class="section pillars" id="poles">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.pillars_tag }}</span>
+        <h2>{{ t.pillars_title }} <em>{{ t.pillars_title_em }}</em></h2>
+        <p>{{ t.pillars_text }}</p>
+      </div>
+      <div class="pillars-grid">
+        <article class="pillar-card" data-goto="culinary">
+          <div class="pillar-media">
+            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=760&h=520&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <span class="pillar-index">01</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_1_title }}</h3>
+            <p>{{ t.pillar_1_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_1_item_1 }}</li>
+              <li>{{ t.pillar_1_item_2 }}</li>
+              <li>{{ t.pillar_1_item_3 }}</li>
+            </ul>
+            <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        <article class="pillar-card" data-goto="hospitality">
+          <div class="pillar-media">
+            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=760&h=520&fit=crop" alt="{{ t.pillar_2_title }}" loading="lazy">
+            <span class="pillar-index">02</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_2_title }}</h3>
+            <p>{{ t.pillar_2_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_2_item_1 }}</li>
+              <li>{{ t.pillar_2_item_2 }}</li>
+              <li>{{ t.pillar_2_item_3 }}</li>
+            </ul>
+            <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        <article class="pillar-card" data-goto="business">
+          <div class="pillar-media">
+            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=760&h=520&fit=crop" alt="{{ t.pillar_3_title }}" loading="lazy">
+            <span class="pillar-index">03</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_3_title }}</h3>
+            <p>{{ t.pillar_3_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_3_item_1 }}</li>
+              <li>{{ t.pillar_3_item_2 }}</li>
+              <li>{{ t.pillar_3_item_3 }}</li>
+            </ul>
+            <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        <article class="pillar-card" data-goto="health">
+          <div class="pillar-media">
+            <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=760&h=520&fit=crop" alt="{{ t.pillar_4_title }}" loading="lazy">
+            <span class="pillar-index">04</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_4_title }}</h3>
+            <p>{{ t.pillar_4_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_4_item_1 }}</li>
+              <li>{{ t.pillar_4_item_2 }}</li>
+              <li>{{ t.pillar_4_item_3 }}</li>
+            </ul>
+            <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+      </div>
     </div>
   </section>
   {% endif %}
@@ -86,10 +160,10 @@
       <div class="about-grid">
         <div class="about-images">
           <div class="about-img about-img-1">
-            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=750&fit=crop" alt="BTSP" style="width:100%;height:100%;object-fit:cover;border-radius:20px">
+            <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=620&h=780&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-img about-img-2">
-            <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=530&fit=crop" alt="BTSP" style="width:100%;height:100%;object-fit:cover;border-radius:20px">
+            <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=420&h=560&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-float-card">
             <span class="float-number">{{ settings.get('years_experience', '12') }}</span>
@@ -104,68 +178,22 @@
           <div class="about-features">
             <div class="feature">
               <div class="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               </div>
               <div><strong>{{ t.about_feature_1_title }}</strong><p>{{ t.about_feature_1_desc }}</p></div>
             </div>
             <div class="feature">
               <div class="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
               </div>
               <div><strong>{{ t.about_feature_2_title }}</strong><p>{{ t.about_feature_2_desc }}</p></div>
             </div>
             <div class="feature">
               <div class="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
               </div>
               <div><strong>{{ t.about_feature_3_title }}</strong><p>{{ t.about_feature_3_desc }}</p></div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-  {% endif %}
-
-  <!-- Services / Corporate -->
-  {% if settings.get('show_services', '1') == '1' %}
-  <section class="section services" id="services">
-    <div class="container">
-      <div class="services-grid">
-        <div class="services-content">
-          <span class="section-tag">{{ t.services_tag }}</span>
-          <h2>{{ t.services_title }} <em>{{ t.services_title_em }}</em></h2>
-          <p>{{ t.services_text }}</p>
-          <a href="#corporate-contact" class="btn btn-primary" style="margin-top:16px">{{ t.btn_corporate_contact }}</a>
-        </div>
-        <div class="services-cards">
-          <div class="service-card">
-            <div class="service-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            </div>
-            <h4>{{ t.service_1_title }}</h4>
-            <p>{{ t.service_1_desc }}</p>
-          </div>
-          <div class="service-card">
-            <div class="service-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-            </div>
-            <h4>{{ t.service_2_title }}</h4>
-            <p>{{ t.service_2_desc }}</p>
-          </div>
-          <div class="service-card">
-            <div class="service-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            </div>
-            <h4>{{ t.service_3_title }}</h4>
-            <p>{{ t.service_3_desc }}</p>
-          </div>
-          <div class="service-card">
-            <div class="service-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
-            </div>
-            <h4>{{ t.service_4_title }}</h4>
-            <p>{{ t.service_4_desc }}</p>
           </div>
         </div>
       </div>
@@ -182,28 +210,32 @@
         <h2>{{ t.formations_title }} <em>{{ t.formations_title_em }}</em></h2>
         <p>{{ t.formations_text }}</p>
       </div>
-      <!-- Category tabs -->
-      <div class="formation-tabs">
-        <button class="tab active" data-cat="all">{{ t.tab_all }}</button>
-        <button class="tab" data-cat="culinary">{{ t.tab_culinary }}</button>
-        <button class="tab" data-cat="it">{{ t.tab_it }}</button>
-        <button class="tab" data-cat="hospitality">{{ t.tab_hospitality }}</button>
+      <div class="formation-tabs" role="tablist">
+        <button class="tab active" data-cat="all" role="tab" aria-selected="true">{{ t.tab_all }}</button>
+        <button class="tab" data-cat="culinary" role="tab" aria-selected="false">{{ t.tab_culinary }}</button>
+        <button class="tab" data-cat="hospitality" role="tab" aria-selected="false">{{ t.tab_hospitality }}</button>
+        <button class="tab" data-cat="health" role="tab" aria-selected="false">{{ t.tab_health }}</button>
+        <button class="tab" data-cat="business" role="tab" aria-selected="false">{{ t.tab_business }}</button>
+        <button class="tab" data-cat="languages" role="tab" aria-selected="false">{{ t.tab_languages }}</button>
       </div>
       <div class="formations-grid">
         {% for f in formations %}
         <article class="formation-card {% if f.featured %}featured{% endif %}" data-category="{{ f.category }}">
+          {# Covers the whole card so the entire tile is clickable; the visible
+             "learn more" affordance below is the same destination. #}
+          <a class="card-link" href="{{ formation_url_base }}{{ f.id }}" aria-label="{{ f.title }}"></a>
           <div class="card-image">
             {% if f.image %}
-              <img src="{{ f.image }}" alt="{{ f.title }}" style="width:100%;height:100%;object-fit:cover">
+              <img src="{{ f.image }}" alt="{{ f.title }}" loading="lazy">
             {% elif f.category == 'it' %}
-              <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500&h=310&fit=crop" alt="{{ f.title }}" style="width:100%;height:100%;object-fit:cover">
+              <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% elif f.category == 'hospitality' %}
-              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=310&fit=crop" alt="{{ f.title }}" style="width:100%;height:100%;object-fit:cover">
+              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% else %}
-              <img src="https://images.unsplash.com/photo-1486427944544-d2c246c4df14?w=500&h=310&fit=crop" alt="{{ f.title }}" style="width:100%;height:100%;object-fit:cover">
+              <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% endif %}
             {% if f.badge %}
-              <span class="card-badge {% if f.featured %}badge-gold{% endif %}">{{ f.badge }}</span>
+              <span class="card-badge {% if f.featured %}badge-accent{% endif %}">{{ f.badge }}</span>
             {% endif %}
           </div>
           <div class="card-content">
@@ -223,11 +255,171 @@
               {% endfor %}
             </ul>
             {% endif %}
-            <a href="#contact" class="btn btn-card">{{ t.btn_learn_more }}</a>
+            <span class="btn btn-card">{{ t.btn_learn_more }}</span>
           </div>
         </article>
         {% endfor %}
       </div>
+    </div>
+  </section>
+  {% endif %}
+
+
+  <!-- Online courses / e-learning -->
+  {% if settings.get('show_online', '1') == '1' %}
+  <section class="section online" id="en-ligne">
+    <div class="container">
+      <div class="online-grid">
+        <div class="online-intro">
+          <span class="section-tag">{{ t.online_tag }}</span>
+          <h2>{{ t.online_title }} <em>{{ t.online_title_em }}</em></h2>
+          <p>{{ t.online_text }}</p>
+          <div class="online-actions">
+            <a href="/student/login" class="btn btn-accent">{{ t.btn_online_access }}</a>
+            <a href="/student/signup" class="btn btn-outline">{{ t.btn_online_signup }}</a>
+          </div>
+        </div>
+        <ul class="online-perks">
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            <div><strong>{{ t.online_1_title }}</strong><p>{{ t.online_1_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </span>
+            <div><strong>{{ t.online_2_title }}</strong><p>{{ t.online_2_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
+            </span>
+            <div><strong>{{ t.online_3_title }}</strong><p>{{ t.online_3_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </span>
+            <div><strong>{{ t.online_4_title }}</strong><p>{{ t.online_4_desc }}</p></div>
+          </li>
+        </ul>
+      </div>
+
+      {% if online_courses %}
+      <h3 class="online-courses-heading">{{ t.online_courses_heading }}</h3>
+      <div class="online-courses">
+        {% for c in online_courses %}
+        <article class="online-card">
+          <div class="online-card-media">
+            {% if c.image %}
+              <img src="{{ c.image }}" alt="{{ c.title }}" loading="lazy">
+            {% else %}
+              <span class="online-card-fallback">{{ c.title[0]|upper }}</span>
+            {% endif %}
+            <span class="online-badge">{{ t.online_tag }}</span>
+          </div>
+          <div class="online-card-body">
+            {% if c.duration %}<span class="online-card-meta">{{ c.duration }}</span>{% endif %}
+            <h4>{{ c.title }}</h4>
+            <p>{{ c.description }}</p>
+            {% if c.instructor %}
+            <span class="online-card-meta">{{ t.online_instructor }} : {{ c.instructor }}</span>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Services for professionals -->
+  {% if settings.get('show_services', '1') == '1' %}
+  <section class="section pro" id="services">
+    <div class="container">
+      <div class="section-header section-header--light">
+        <span class="section-tag">{{ t.pro_tag }}</span>
+        <h2>{{ t.pro_title }} <em>{{ t.pro_title_em }}</em></h2>
+        <p>{{ t.pro_text }}</p>
+      </div>
+      <div class="pro-grid">
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3>{{ t.pro_1_title }}</h3>
+          <p>{{ t.pro_1_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_1_item_1 }}</li>
+            <li>{{ t.pro_1_item_2 }}</li>
+            <li>{{ t.pro_1_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+          </div>
+          <h3>{{ t.pro_2_title }}</h3>
+          <p>{{ t.pro_2_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_2_item_1 }}</li>
+            <li>{{ t.pro_2_item_2 }}</li>
+            <li>{{ t.pro_2_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 11l3 3 6-6"/><path d="M21 12v6a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h8"/></svg>
+          </div>
+          <h3>{{ t.pro_3_title }}</h3>
+          <p>{{ t.pro_3_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_3_item_1 }}</li>
+            <li>{{ t.pro_3_item_2 }}</li>
+            <li>{{ t.pro_3_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 21h18M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          </div>
+          <h3>{{ t.pro_4_title }}</h3>
+          <p>{{ t.pro_4_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_4_item_1 }}</li>
+            <li>{{ t.pro_4_item_2 }}</li>
+            <li>{{ t.pro_4_item_3 }}</li>
+          </ul>
+        </article>
+      </div>
+      <div class="pro-cta">
+        <div>
+          <h3>{{ t.pro_cta_title }}</h3>
+          <p>{{ t.pro_cta_text }}</p>
+        </div>
+        <a href="#pro-contact" class="btn btn-accent">{{ t.btn_corporate_contact }}</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Admission process -->
+  {% if settings.get('show_process', '1') == '1' %}
+  <section class="section process" id="admission">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.process_tag }}</span>
+        <h2>{{ t.process_title }} <em>{{ t.process_title_em }}</em></h2>
+      </div>
+      <ol class="process-grid">
+        <li class="process-step"><span class="step-num">1</span><h4>{{ t.process_1_title }}</h4><p>{{ t.process_1_text }}</p></li>
+        <li class="process-step"><span class="step-num">2</span><h4>{{ t.process_2_title }}</h4><p>{{ t.process_2_text }}</p></li>
+        <li class="process-step"><span class="step-num">3</span><h4>{{ t.process_3_title }}</h4><p>{{ t.process_3_text }}</p></li>
+        <li class="process-step"><span class="step-num">4</span><h4>{{ t.process_4_title }}</h4><p>{{ t.process_4_text }}</p></li>
+      </ol>
     </div>
   </section>
   {% endif %}
@@ -245,7 +437,7 @@
             {% for c in certificates %}
             <div class="cert-item">
               <div class="cert-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 15l-2 5 2-1 2 1-2-5z"/><circle cx="12" cy="9" r="6"/><path d="M9 9l2 2 4-4"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 15l-2 5 2-1 2 1-2-5z"/><circle cx="12" cy="9" r="6"/><path d="M9 9l2 2 4-4"/></svg>
               </div>
               <div>
                 <h4>{{ c.title }}</h4>
@@ -256,22 +448,20 @@
           </div>
         </div>
         <div class="cert-visual">
-          <div class="cert-card-display">
-            <div class="cert-mockup">
-              <div class="cert-mockup-inner">
-                <div class="cert-ornament-top"></div>
-                <span class="cert-school">{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</span>
-                <h3>{{ t.cert_mockup_title }}</h3>
-                <div class="cert-divider"></div>
-                <p>{{ t.cert_mockup_awarded }}</p>
-                <span class="cert-name">{{ t.cert_mockup_name }}</span>
-                <p class="cert-program">{{ t.cert_mockup_for }} <strong>Cake Design & Décoration</strong></p>
-                <div class="cert-footer">
-                  <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_director }}</span></div>
-                  <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_trainer }}</span></div>
-                </div>
-                <div class="cert-ornament-bottom"></div>
+          <div class="cert-mockup">
+            <div class="cert-mockup-inner">
+              <div class="cert-ornament-top"></div>
+              <span class="cert-school">{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</span>
+              <h3>{{ t.cert_mockup_title }}</h3>
+              <div class="cert-divider"></div>
+              <p>{{ t.cert_mockup_awarded }}</p>
+              <span class="cert-name">{{ t.cert_mockup_name }}</span>
+              <p class="cert-program">{{ t.cert_mockup_for }} <strong>{{ formations[0].title if formations else t.pillar_1_title }}</strong></p>
+              <div class="cert-footer">
+                <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_director }}</span></div>
+                <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_trainer }}</span></div>
               </div>
+              <div class="cert-ornament-bottom"></div>
             </div>
           </div>
         </div>
@@ -280,110 +470,9 @@
   </section>
   {% endif %}
 
-  <!-- Gallery -->
-  {% if settings.get('show_gallery', '1') == '1' %}
-  {% if gallery %}
-  <section class="section galerie" id="galerie">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">{{ t.gallery_tag }}</span>
-        <h2>{{ t.gallery_title }} <em>{{ t.gallery_title_em }}</em></h2>
-        <p>{{ t.gallery_text }}</p>
-      </div>
-      <div class="gallery-grid">
-        {% for img in gallery %}
-        <div class="gallery-item {% if img.large %}gallery-large{% endif %}">
-          <img src="{{ img.image }}" alt="{{ img.title }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-  {% else %}
-  <section class="section galerie" id="galerie">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">{{ t.gallery_tag }}</span>
-        <h2>{{ t.gallery_title }} <em>{{ t.gallery_title_em }}</em></h2>
-        <p>{{ t.gallery_text }}</p>
-      </div>
-      <div class="gallery-grid">
-        <div class="gallery-item gallery-large">
-          <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&h=480&fit=crop" alt="Pastry" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=480&fit=crop" alt="Cake" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&h=480&fit=crop" alt="IT" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=480&fit=crop" alt="Hotel" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-        <div class="gallery-item gallery-large">
-          <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=480&fit=crop" alt="Training" style="width:100%;height:100%;object-fit:cover;border-radius:12px">
-        </div>
-      </div>
-    </div>
-  </section>
-  {% endif %}
-  {% endif %}
-
-  <!-- Testimonials -->
-  {% if settings.get('show_testimonials', '1') == '1' %}
-  {% if testimonials %}
-  <section class="section testimonials">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">{{ t.testimonials_tag }}</span>
-        <h2>{{ t.testimonials_title }} <em>{{ t.testimonials_title_em }}</em></h2>
-      </div>
-      <div class="testimonials-grid">
-        {% for te in testimonials %}
-        <div class="testimonial-card">
-          <div class="testimonial-stars">
-            {% for i in range(te.rating) %}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            {% endfor %}
-          </div>
-          <p>"{{ te.content }}"</p>
-          <div class="testimonial-author">
-            <div class="author-avatar">{{ te.avatar_letter or te.name[0] }}</div>
-            <div>
-              <strong>{{ te.name }}</strong>
-              <span>{{ te.promotion }}</span>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-  {% endif %}
-  {% endif %}
-
-  <!-- Partners Bar -->
-  {% if partners %}
-  <section class="section partners-section" style="padding:60px 0">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">{{ t.partners_tag }}</span>
-        <h2>{{ t.partners_title }} <em>{{ t.partners_title_em }}</em></h2>
-      </div>
-      <div class="partners-grid">
-        {% for p in partners %}
-        <a href="{{ p.website_url or '#' }}" class="partner-logo" {% if p.website_url %}target="_blank" rel="noopener"{% endif %}>
-          <img src="{{ p.logo }}" alt="{{ p.name }}" title="{{ p.name }}">
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-  {% endif %}
-
-  <!-- Upcoming Sessions -->
+  <!-- Upcoming sessions -->
   {% if sessions %}
-  <section class="section sessions-section" style="background:var(--color-cream)">
+  <section class="section sessions-section">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">{{ t.sessions_tag }}</span>
@@ -393,8 +482,8 @@
         {% for s in sessions %}
         <div class="session-card">
           <div class="session-date">
-            <span class="session-month">{{ s.start_date[5:7] }}/{{ s.start_date[:4] }}</span>
             <span class="session-day">{{ s.start_date[8:10] }}</span>
+            <span class="session-month">{{ s.start_date[5:7] }}/{{ s.start_date[:4] }}</span>
           </div>
           <div class="session-info">
             <h4>{{ s.title }}</h4>
@@ -423,6 +512,97 @@
   </section>
   {% endif %}
 
+  <!-- Gallery -->
+  {% if settings.get('show_gallery', '1') == '1' %}
+  <section class="section galerie" id="galerie">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.gallery_tag }}</span>
+        <h2>{{ t.gallery_title }} <em>{{ t.gallery_title_em }}</em></h2>
+        <p>{{ t.gallery_text }}</p>
+      </div>
+      <div class="gallery-grid">
+        {% if gallery %}
+          {% for img in gallery %}
+          <div class="gallery-item {% if img.large %}gallery-large{% endif %}">
+            <img src="{{ img.image }}" alt="{{ img.title }}" loading="lazy">
+            {% if img.title %}<span class="gallery-caption">{{ img.title }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="gallery-item gallery-large">
+            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=900&h=560&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <span class="gallery-caption">{{ t.pillar_1_title }}</span>
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=460&h=560&fit=crop" alt="{{ t.tab_culinary }}" loading="lazy">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=460&h=560&fit=crop" alt="{{ t.tab_it }}" loading="lazy">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=460&h=560&fit=crop" alt="{{ t.tab_hospitality }}" loading="lazy">
+          </div>
+          <div class="gallery-item gallery-large">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&h=560&fit=crop" alt="{{ t.pillars_tag }}" loading="lazy">
+            <span class="gallery-caption">{{ t.pillar_2_title }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Testimonials -->
+  {% if settings.get('show_testimonials', '1') == '1' and testimonials %}
+  <section class="section testimonials">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.testimonials_tag }}</span>
+        <h2>{{ t.testimonials_title }} <em>{{ t.testimonials_title_em }}</em></h2>
+      </div>
+      <div class="testimonials-grid">
+        {% for te in testimonials %}
+        <figure class="testimonial-card">
+          <div class="testimonial-stars">
+            {% for i in range(te.rating) %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            {% endfor %}
+          </div>
+          <blockquote>{{ te.content }}</blockquote>
+          <figcaption class="testimonial-author">
+            <div class="author-avatar">{{ te.avatar_letter or te.name[0] }}</div>
+            <div>
+              <strong>{{ te.name }}</strong>
+              <span>{{ te.promotion }}</span>
+            </div>
+          </figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Partners -->
+  {% if partners %}
+  <section class="section partners-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.partners_tag }}</span>
+        <h2>{{ t.partners_title }} <em>{{ t.partners_title_em }}</em></h2>
+      </div>
+      <div class="partners-grid">
+        {% for p in partners %}
+        <a href="{{ p.website_url or '#' }}" class="partner-logo" {% if p.website_url %}target="_blank" rel="noopener"{% endif %}>
+          <img src="{{ p.logo }}" alt="{{ p.name }}" title="{{ p.name }}" loading="lazy">
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <!-- FAQ -->
   {% if faqs %}
   <section class="section faq-section">
@@ -434,7 +614,7 @@
       <div class="faq-list">
         {% for fq in faqs %}
         <div class="faq-item">
-          <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <button class="faq-question" type="button" aria-expanded="false">
             <span>{{ fq.question }}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
@@ -448,86 +628,14 @@
   </section>
   {% endif %}
 
-  <!-- Proposal Form -->
-  <section class="section proposal-section" id="proposal" style="background:var(--color-cream)">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">{{ t.proposal_tag }}</span>
-        <h2>{{ t.proposal_title }} <em>{{ t.proposal_title_em }}</em></h2>
-        <p>{{ t.proposal_text }}</p>
-      </div>
-      <div class="corporate-form-wrapper">
-        <form id="proposalForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label>{{ t.proposal_company }}</label>
-              <input type="text" name="company_name" required>
-            </div>
-            <div class="form-group">
-              <label>{{ t.proposal_contact }}</label>
-              <input type="text" name="contact_name" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>{{ t.form_email }}</label>
-              <input type="email" name="email" required>
-            </div>
-            <div class="form-group">
-              <label>{{ t.form_phone }}</label>
-              <input type="tel" name="phone" required placeholder="+212 6XX-XXXXXX">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>{{ t.proposal_training }}</label>
-              <select name="training_type" required>
-                <option value="" disabled selected>{{ t.form_formation_placeholder }}</option>
-                {% for f in formations %}
-                <option value="{{ f.title }}">{{ f.title }}</option>
-                {% endfor %}
-                <option value="custom">{{ t.service_3_title }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ t.proposal_participants }}</label>
-              <input type="number" name="num_participants" min="1" value="10">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>{{ t.proposal_objectives }}</label>
-            <textarea name="objectives" rows="3"></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>{{ t.form_budget }}</label>
-              <select name="budget">
-                <option value="" disabled selected>{{ t.form_budget_placeholder }}</option>
-                <option value="under_10k">{{ t.budget_under_10k }}</option>
-                <option value="10k_30k">{{ t.budget_10k_30k }}</option>
-                <option value="30k_50k">{{ t.budget_30k_50k }}</option>
-                <option value="over_50k">{{ t.budget_over_50k }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ t.proposal_timeline }}</label>
-              <input type="text" name="timeline" placeholder="Ex: Septembre 2026">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-full">{{ t.proposal_submit }}</button>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- Custom Sections -->
+  <!-- Custom sections -->
   {% for cs in custom_sections %}
   <section class="section custom-section" id="{{ cs.section_key }}" data-animation="{{ cs.animation }}">
     <div class="container">
       <div class="custom-section-inner {% if cs.image %}has-image{% endif %}">
         {% if cs.image %}
         <div class="custom-section-image">
-          <img src="{{ cs.image }}" alt="{{ cs.title }}" style="width:100%;height:100%;object-fit:cover;border-radius:16px">
+          <img src="{{ cs.image }}" alt="{{ cs.title }}" loading="lazy">
         </div>
         {% endif %}
         <div class="custom-section-content">
@@ -556,26 +664,26 @@
           <p>{{ t.contact_text }}</p>
           <div class="contact-details">
             <div class="contact-item">
-              <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
               <div><strong>{{ t.contact_address }}</strong><p>{{ settings.get('address', '') }}</p></div>
             </div>
             <div class="contact-item">
-              <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
               <div><strong>{{ t.contact_phone }}</strong><p>{{ settings.get('phone', '') }}{% if settings.get('phone_2') %} / {{ settings.get('phone_2') }}{% endif %}</p></div>
             </div>
             <div class="contact-item">
-              <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
               <div><strong>{{ t.contact_email }}</strong><p>{{ settings.get('email', '') }}</p></div>
             </div>
             <div class="contact-item">
-              <div class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
               <div><strong>{{ t.contact_hours }}</strong><p>{{ settings.get('hours', '') }}</p></div>
             </div>
           </div>
           <div class="social-links">
-            <a href="{{ settings.get('facebook_url', '#') }}" class="social-link" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
-            <a href="{{ settings.get('instagram_url', '#') }}" class="social-link" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
-            <a href="{{ settings.get('whatsapp_url', '#') }}" class="social-link" aria-label="WhatsApp"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+            {% if settings.get('facebook_url') and settings.get('facebook_url') != '#' %}<a href="{{ settings.get('facebook_url', '#') }}" class="social-link" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>{% endif %}
+            {% if settings.get('instagram_url') and settings.get('instagram_url') != '#' %}<a href="{{ settings.get('instagram_url', '#') }}" class="social-link" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>{% endif %}
+            {% if settings.get('whatsapp_url') and settings.get('whatsapp_url') != '#' %}<a href="{{ settings.get('whatsapp_url', '#') }}" class="social-link" aria-label="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>{% endif %}
           </div>
         </div>
         <div class="contact-form-wrapper">
@@ -613,21 +721,27 @@
               <label for="message">{{ t.form_message }}</label>
               <textarea id="message" name="message" rows="3"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-full">{{ t.form_submit }}</button>
+            <button type="submit" class="btn btn-accent btn-full">{{ t.form_submit }}</button>
           </form>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Corporate Contact Form -->
-  <section class="corporate-form-section" id="corporate-contact">
+  <!-- Professional enquiry: corporate training + detailed proposal -->
+  <section class="section pro-contact" id="pro-contact">
     <div class="container">
       <div class="section-header">
-        <span class="section-tag">{{ t.services_tag }}</span>
+        <span class="section-tag">{{ t.pro_tag }}</span>
         <h2>{{ t.corporate_form_title }}</h2>
+        <p>{{ t.proposal_text }}</p>
       </div>
-      <div class="corporate-form-wrapper">
+      <div class="pro-form-tabs" role="tablist">
+        <button class="pro-tab active" data-form="corporateForm" role="tab" aria-selected="true">{{ t.btn_corporate_contact }}</button>
+        <button class="pro-tab" data-form="proposalForm" role="tab" aria-selected="false">{{ t.proposal_submit }}</button>
+      </div>
+
+      <div class="corporate-form-wrapper" id="pane-corporateForm">
         <form id="corporateForm">
           <input type="hidden" name="inscription_type" value="corporate">
           <div class="form-row">
@@ -673,226 +787,156 @@
               {% for f in formations %}
               <option value="{{ f.title }}">{{ f.title }}</option>
               {% endfor %}
+              <option value="{{ t.pro_2_title }}">{{ t.pro_2_title }}</option>
+              <option value="{{ t.pro_3_title }}">{{ t.pro_3_title }}</option>
+              <option value="{{ t.pro_4_title }}">{{ t.pro_4_title }}</option>
             </select>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label for="corp_dates">{{ t.form_desired_dates }}</label>
-              <input type="text" id="corp_dates" name="desired_dates" placeholder="Ex: Janvier 2026">
+              <input type="text" id="corp_dates" name="desired_dates">
             </div>
           </div>
           <div class="form-group">
             <label for="corp_message">{{ t.form_message }}</label>
             <textarea id="corp_message" name="message" rows="3"></textarea>
           </div>
-          <button type="submit" class="btn btn-primary btn-full">{{ t.form_corporate_submit }}</button>
+          <button type="submit" class="btn btn-accent btn-full">{{ t.form_corporate_submit }}</button>
+        </form>
+      </div>
+
+      <div class="corporate-form-wrapper" id="pane-proposalForm" hidden>
+        <form id="proposalForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_company">{{ t.proposal_company }}</label>
+              <input type="text" id="prop_company" name="company_name" required>
+            </div>
+            <div class="form-group">
+              <label for="prop_contact">{{ t.proposal_contact }}</label>
+              <input type="text" id="prop_contact" name="contact_name" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_email">{{ t.form_email }}</label>
+              <input type="email" id="prop_email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="prop_phone">{{ t.form_phone }}</label>
+              <input type="tel" id="prop_phone" name="phone" required placeholder="+212 6XX-XXXXXX">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_training">{{ t.proposal_training }}</label>
+              <select id="prop_training" name="training_type" required>
+                <option value="" disabled selected>{{ t.form_formation_placeholder }}</option>
+                {% for f in formations %}
+                <option value="{{ f.title }}">{{ f.title }}</option>
+                {% endfor %}
+                <option value="custom">{{ t.proposal_custom_option }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prop_participants">{{ t.proposal_participants }}</label>
+              <input type="number" id="prop_participants" name="num_participants" min="1" value="10">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="prop_objectives">{{ t.proposal_objectives }}</label>
+            <textarea id="prop_objectives" name="objectives" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_budget">{{ t.form_budget }}</label>
+              <select id="prop_budget" name="budget">
+                <option value="" disabled selected>{{ t.form_budget_placeholder }}</option>
+                <option value="under_10k">{{ t.budget_under_10k }}</option>
+                <option value="10k_30k">{{ t.budget_10k_30k }}</option>
+                <option value="30k_50k">{{ t.budget_30k_50k }}</option>
+                <option value="over_50k">{{ t.budget_over_50k }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prop_timeline">{{ t.proposal_timeline }}</label>
+              <input type="text" id="prop_timeline" name="timeline">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent btn-full">{{ t.proposal_submit }}</button>
         </form>
       </div>
     </div>
   </section>
   {% endif %}
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <a href="{{ '/' if lang == 'fr' else '/' + lang + '/' }}" class="nav-logo">
-            <img src="{{ settings.get('logo_url', '/uploads/logo.jpeg') }}" alt="BTSP" class="nav-logo-img">
-            <span class="logo-text">{{ settings.get('site_name', 'BTSP') }}</span>
-          </a>
-          <p>{{ t.footer_tagline }}</p>
-        </div>
-        <div class="footer-links">
-          <h4>{{ t.footer_quick_links }}</h4>
-          <ul>
-            <li><a href="#accueil">{{ t.nav_home }}</a></li>
-            <li><a href="#apropos">{{ t.nav_about }}</a></li>
-            <li><a href="#formations">{{ t.nav_formations }}</a></li>
-            <li><a href="#certificats">{{ t.nav_certificates }}</a></li>
-            <li><a href="#contact">{{ t.nav_register }}</a></li>
-          </ul>
-        </div>
-        <div class="footer-links">
-          <h4>{{ t.footer_formations }}</h4>
-          <ul>
-            {% for f in formations[:5] %}
-            <li><a href="#formations">{{ f.title }}</a></li>
-            {% endfor %}
-          </ul>
-        </div>
-        <div class="footer-links">
-          <h4>{{ t.footer_info }}</h4>
-          <ul>
-            <li><a href="#">{{ t.footer_admission }}</a></li>
-            <li><a href="#">{{ t.footer_pricing }}</a></li>
-            <li><a href="#">{{ t.footer_student_life }}</a></li>
-            <li><a href="#">{{ t.footer_partners }}</a></li>
-            <li><a href="#">{{ t.footer_faq }}</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>&copy; 2026 {{ settings.get('site_name_full', 'École BADAR Training and Service') }}. {{ t.footer_rights }}</p>
-        <div class="footer-bottom-links">
-          <a href="#">{{ t.footer_legal }}</a>
-          <a href="#">{{ t.footer_privacy }}</a>
-        </div>
-      </div>
-    </div>
-  </footer>
+  {% include 'public/_footer.html' %}
 
   <script>
-    // Translation strings for JS
-    const T = {
-      form_sending: {{ t.form_sending|tojson }},
-      form_success: {{ t.form_success|tojson }},
-      form_error: {{ t.form_error|tojson }},
-      form_network_error: {{ t.form_network_error|tojson }},
-      form_submit: {{ t.form_submit|tojson }},
-      form_corporate_submit: {{ t.form_corporate_submit|tojson }}
-    };
-
-    // Navbar scroll
-    const navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', () => { navbar.classList.toggle('scrolled', window.scrollY > 50); });
-
-    // Mobile menu
-    const navToggle = document.getElementById('navToggle');
-    const navLinks = document.getElementById('navLinks');
-    navToggle.addEventListener('click', () => { navLinks.classList.toggle('active'); navToggle.classList.toggle('active'); });
-    navLinks.querySelectorAll('a').forEach(link => { link.addEventListener('click', () => { navLinks.classList.remove('active'); navToggle.classList.remove('active'); }); });
-
-    // Smooth scroll
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function(e) { e.preventDefault(); const t = document.querySelector(this.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-    });
-
-    // Scroll reveal with staggered delays
-    const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('revealed'); observer.unobserve(entry.target); } }); }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-    const revealEls = document.querySelectorAll('.formation-card, .cert-item, .testimonial-card, .gallery-item, .about-content, .about-images, .contact-info, .contact-form-wrapper, .service-card, .custom-section-content, .custom-section-image');
-    revealEls.forEach((el, i) => {
-      el.classList.add('reveal');
-      el.style.setProperty('--i', i % 6);
-      observer.observe(el);
-    });
-    // Custom sections with their own animation type
-    document.querySelectorAll('.custom-section').forEach(sec => {
-      const anim = sec.dataset.animation || 'fade-up';
-      const inner = sec.querySelector('.custom-section-content');
-      if (inner) { inner.setAttribute('data-anim', anim); inner.classList.add('reveal'); observer.observe(inner); }
-      const img = sec.querySelector('.custom-section-image');
-      if (img) { img.setAttribute('data-anim', 'slide-left'); img.classList.add('reveal'); observer.observe(img); }
-    });
-
-    // Category tabs
+    // Programme category filter
     document.querySelectorAll('.formation-tabs .tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.formation-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.formation-tabs .tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
         this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
         const cat = this.dataset.cat;
         document.querySelectorAll('.formation-card').forEach(card => {
-          if (cat === 'all' || card.dataset.category === cat) {
-            card.removeAttribute('data-hidden');
-            card.style.display = '';
-          } else {
-            card.setAttribute('data-hidden', 'true');
-            card.style.display = 'none';
-          }
+          card.hidden = !(cat === 'all' || card.dataset.category === cat);
         });
       });
     });
 
-    // Form submission helper
-    function handleFormSubmit(form, submitText) {
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = this.querySelector('button[type="submit"]');
-        const formData = new FormData(this);
-        btn.disabled = true;
-        btn.textContent = T.form_sending;
-        fetch('/api/inscription', { method: 'POST', body: formData })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              btn.textContent = T.form_success;
-              btn.style.background = '#16a34a';
-              form.reset();
-            } else {
-              btn.textContent = data.error || T.form_error;
-              btn.style.background = '#DC2626';
-            }
-            setTimeout(() => { btn.textContent = submitText; btn.style.background = ''; btn.disabled = false; }, 3000);
-          })
-          .catch(() => {
-            btn.textContent = T.form_network_error;
-            btn.style.background = '#DC2626';
-            setTimeout(() => { btn.textContent = submitText; btn.style.background = ''; btn.disabled = false; }, 3000);
-          });
+    // Jump from a pole card straight to its filtered programmes
+    document.querySelectorAll('.pillar-card[data-goto] .link-arrow').forEach(link => {
+      link.addEventListener('click', () => {
+        const tab = document.querySelector('.formation-tabs .tab[data-cat="' + link.closest('.pillar-card').dataset.goto + '"]');
+        if (tab) tab.click();
       });
-    }
+    });
 
-    handleFormSubmit(document.getElementById('contactForm'), T.form_submit);
-    handleFormSubmit(document.getElementById('corporateForm'), T.form_corporate_submit);
-
-    // Proposal form
-    const proposalForm = document.getElementById('proposalForm');
-    if (proposalForm) {
-      proposalForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = this.querySelector('button[type="submit"]');
-        const formData = new FormData(this);
-        btn.disabled = true;
-        btn.textContent = T.form_sending;
-        fetch('/api/proposal', { method: 'POST', body: formData })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              btn.textContent = T.form_success;
-              btn.style.background = '#16a34a';
-              proposalForm.reset();
-            } else {
-              btn.textContent = data.error || T.form_error;
-              btn.style.background = '#DC2626';
-            }
-            setTimeout(() => { btn.textContent = {{ t.proposal_submit|tojson }}; btn.style.background = ''; btn.disabled = false; }, 3000);
-          })
-          .catch(() => {
-            btn.textContent = T.form_network_error;
-            btn.style.background = '#DC2626';
-            setTimeout(() => { btn.textContent = {{ t.proposal_submit|tojson }}; btn.style.background = ''; btn.disabled = false; }, 3000);
-          });
+    // Professional enquiry form switcher
+    document.querySelectorAll('.pro-tab').forEach(tab => {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.pro-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
+        document.querySelectorAll('[id^="pane-"]').forEach(p => { p.hidden = true; });
+        const pane = document.getElementById('pane-' + this.dataset.form);
+        if (pane) pane.hidden = false;
       });
-    }
+    });
 
-    // Animated counters
+    handleFormSubmit(document.getElementById('contactForm'), '/api/inscription', T.form_submit);
+    handleFormSubmit(document.getElementById('corporateForm'), '/api/inscription', T.form_corporate_submit);
+    handleFormSubmit(document.getElementById('proposalForm'), '/api/proposal', T.proposal_submit);
+
+    // Animated stat counters
     const counterObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const el = entry.target;
-          const text = el.textContent;
-          const match = text.match(/(\d+)/);
-          if (match) {
-            const target = parseInt(match[1]);
-            const suffix = text.replace(match[1], '');
-            let current = 0;
-            const step = Math.max(1, Math.floor(target / 60));
-            const interval = setInterval(() => {
-              current += step;
-              if (current >= target) { current = target; clearInterval(interval); }
-              el.textContent = current + suffix;
-            }, 20);
-          }
-          counterObserver.unobserve(el);
-        }
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const match = el.textContent.match(/(\d+)/);
+        counterObserver.unobserve(el);
+        if (!match) return;
+        const target = parseInt(match[1], 10);
+        const template = el.textContent;
+        let current = 0;
+        const step = Math.max(1, Math.round(target / 45));
+        const tick = setInterval(() => {
+          current = Math.min(current + step, target);
+          el.textContent = template.replace(match[1], String(current));
+          if (current >= target) clearInterval(tick);
+        }, 22);
       });
-    }, { threshold: 0.5 });
+    }, { threshold: 0.6 });
     document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
   </script>
-
-  <!-- WhatsApp Floating Button -->
-  <a href="{{ settings.get('whatsapp_url', 'https://wa.me/212637486276') }}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-  </a>
 </body>
 </html>

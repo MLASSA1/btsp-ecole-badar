@@ -1,7 +1,12 @@
 venv/
 __pycache__/
 database.db
+database.db-shm
+database.db-wal
 uploads/
 .env
+.secret_key
 *.pem
 *.pyc
+.DS_Store
+.claude/

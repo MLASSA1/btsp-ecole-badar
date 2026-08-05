@@ -86,8 +86,11 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
         <label class="form-check"><input type="checkbox" name="setting_show_hero" value="1" {% if settings.get('show_hero', '1') == '1' %}checked{% endif %}> Hero</label>
         <label class="form-check"><input type="checkbox" name="setting_show_about" value="1" {% if settings.get('show_about', '1') == '1' %}checked{% endif %}> À Propos</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_pillars" value="1" {% if settings.get('show_pillars', '1') == '1' %}checked{% endif %}> Pôles</label>
         <label class="form-check"><input type="checkbox" name="setting_show_services" value="1" {% if settings.get('show_services', '1') == '1' %}checked{% endif %}> Services B2B</label>
         <label class="form-check"><input type="checkbox" name="setting_show_formations" value="1" {% if settings.get('show_formations', '1') == '1' %}checked{% endif %}> Formations</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_online" value="1" {% if settings.get('show_online', '1') == '1' %}checked{% endif %}> Cours en ligne</label>
+        <label class="form-check"><input type="checkbox" name="setting_show_process" value="1" {% if settings.get('show_process', '1') == '1' %}checked{% endif %}> Admission</label>
         <label class="form-check"><input type="checkbox" name="setting_show_certificates" value="1" {% if settings.get('show_certificates', '1') == '1' %}checked{% endif %}> Certificats</label>
         <label class="form-check"><input type="checkbox" name="setting_show_gallery" value="1" {% if settings.get('show_gallery', '1') == '1' %}checked{% endif %}> Galerie</label>
         <label class="form-check"><input type="checkbox" name="setting_show_testimonials" value="1" {% if settings.get('show_testimonials', '1') == '1' %}checked{% endif %}> Témoignages</label>

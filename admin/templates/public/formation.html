@@ -1,0 +1,368 @@
+{% set home_url = '/' if lang == 'fr' else '/' + lang + '/' %}
+{% set nav_prefix = home_url %}
+{% set formation_url_base = '/formation/' if lang == 'fr' else '/' + lang + '/formation/' %}
+{% set pole_label = {'culinary': t.tab_culinary, 'hospitality': t.tab_hospitality, 'it': t.tab_it}.get(formation.category, t.tab_all) %}
+{% set fallback_image = {
+     'it': 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=800&fit=crop',
+     'hospitality': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&h=800&fit=crop'
+   }.get(formation.category, 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&h=800&fit=crop') %}
+{% set modules = (formation.program_content or formation.features or '').split('|') %}
+{% set outcomes = (formation.career_outcomes or '').split('|') %}
+{% set skills = (formation.features or '').split('|') %}
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang == 'ar' else 'ltr' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ formation.title }} — {{ settings.get('site_name', 'BTSP') }}</title>
+  <meta name="description" content="{{ formation.description[:160] }}">
+  <meta name="theme-color" content="#0A2A63">
+  <meta property="og:title" content="{{ formation.title }} — {{ settings.get('site_name', 'BTSP') }}">
+  <meta property="og:description" content="{{ formation.description[:160] }}">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  {% if lang == 'ar' %}
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  {% endif %}
+  <link rel="stylesheet" href="/static-site/style.css">
+</head>
+<body>
+
+  <a href="#inscription" class="skip-link">{{ t.btn_apply }}</a>
+
+  {% include 'public/_header.html' %}
+
+  <!-- Programme masthead -->
+  <header class="pdp-head">
+    <div class="pdp-head-media">
+      <img src="{{ formation.image or fallback_image }}" alt="{{ formation.title }}">
+    </div>
+    <div class="container pdp-head-inner">
+      <nav class="crumbs" aria-label="breadcrumb">
+        <a href="{{ home_url }}">{{ t.nav_home }}</a>
+        <span>/</span>
+        <a href="{{ home_url }}#formations">{{ t.detail_all_programs }}</a>
+        <span>/</span>
+        <strong>{{ formation.title }}</strong>
+      </nav>
+      <span class="pdp-pole">{{ pole_label }}</span>
+      <h1>{{ formation.title }}</h1>
+      <p class="pdp-lead">{{ formation.description }}</p>
+      <ul class="pdp-facts">
+        <li>
+          <span class="fact-label">{{ t.info_duration }}</span>
+          <span class="fact-value">{{ formation.duration }}</span>
+        </li>
+        <li>
+          <span class="fact-label">{{ t.info_diploma }}</span>
+          <span class="fact-value">{{ formation.diploma_type }}</span>
+        </li>
+        <li>
+          <span class="fact-label">{{ t.info_schedule }}</span>
+          <span class="fact-value">{{ formation.schedule or t.default_schedule }}</span>
+        </li>
+        {% if formation.next_start %}
+        <li>
+          <span class="fact-label">{{ t.info_start }}</span>
+          <span class="fact-value">{{ formation.next_start }}</span>
+        </li>
+        {% endif %}
+      </ul>
+      <div class="pdp-head-actions">
+        <a href="#inscription" class="btn btn-accent">{{ t.btn_apply }}</a>
+        <a href="#programme" class="btn btn-ghost">{{ t.detail_program_title }}</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Overview + specification sidebar -->
+  <section class="section pdp-body">
+    <div class="container pdp-grid">
+      <div class="pdp-main">
+        <span class="section-tag">{{ t.detail_overview_title }}</span>
+        <h2>{{ formation.title }}</h2>
+        <div class="prose">
+          <p>{{ formation.long_description or formation.description }}</p>
+        </div>
+
+        {% if skills and skills[0].strip() %}
+        <h3 class="pdp-subhead">{{ t.detail_skills_title }} <em>{{ t.detail_skills_title_em }}</em></h3>
+        <ul class="ticks pdp-skills">
+          {% for sk in skills %}{% if sk.strip() %}<li>{{ sk.strip() }}</li>{% endif %}{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <aside class="pdp-aside">
+        <div class="spec-card">
+          <h3>{{ t.detail_key_info }}</h3>
+          <div class="spec-row">
+            <span>{{ t.info_pole }}</span>
+            <strong>{{ pole_label }}</strong>
+          </div>
+          <div class="spec-row">
+            <span>{{ t.info_duration }}</span>
+            <strong>{{ formation.duration }}</strong>
+          </div>
+          <div class="spec-row">
+            <span>{{ t.info_diploma }}</span>
+            <strong>{{ formation.diploma_type }}</strong>
+          </div>
+          <div class="spec-row">
+            <span>{{ t.info_schedule }}</span>
+            <strong>{{ formation.schedule or t.default_schedule }}</strong>
+          </div>
+          {% if formation.next_start %}
+          <div class="spec-row">
+            <span>{{ t.info_start }}</span>
+            <strong>{{ formation.next_start }}</strong>
+          </div>
+          {% endif %}
+          {% if formation.price %}
+          <div class="spec-row">
+            <span>{{ t.info_price }}</span>
+            <strong>{{ formation.price }}</strong>
+          </div>
+          {% endif %}
+          <div class="spec-row spec-row--stack">
+            <span>{{ t.info_prerequisites }}</span>
+            <strong>{{ formation.prerequisites or t.default_prerequisites }}</strong>
+          </div>
+          <a href="#inscription" class="btn btn-accent btn-full">{{ t.btn_apply }}</a>
+          <p class="spec-call">
+            {{ t.detail_register_call }}<br>
+            <a href="tel:{{ settings.get('phone', '')|replace('.', '')|replace(' ', '') }}">{{ settings.get('phone', '') }}</a>
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Curriculum -->
+  {% if modules and modules[0].strip() %}
+  <section class="section pdp-program" id="programme">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.detail_overview_title }}</span>
+        <h2>{{ t.detail_program_title }}</h2>
+        <p>{{ t.detail_program_text }}</p>
+      </div>
+      <ol class="module-list">
+        {% for m in modules %}
+          {% if m.strip() %}
+          <li class="module-item">
+            <span class="module-num">{{ '%02d'|format(loop.index) }}</span>
+            <div class="module-body">
+              {% if '::' in m %}
+                <h4>{{ m.split('::')[0].strip() }}</h4>
+                <p>{{ m.split('::')[1].strip() }}</p>
+              {% else %}
+                <h4>{{ m.strip() }}</h4>
+              {% endif %}
+            </div>
+          </li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Career outcomes -->
+  {% if outcomes and outcomes[0].strip() %}
+  <section class="section pdp-outcomes">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.detail_career_title_em }}</span>
+        <h2>{{ t.detail_career_title }} <em>{{ t.detail_career_title_em }}</em></h2>
+        <p>{{ t.detail_career_text }}</p>
+      </div>
+      <div class="outcome-grid">
+        {% for o in outcomes %}
+          {% if o.strip() %}
+          <div class="outcome-item">{{ o.strip() }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Upcoming sessions -->
+  {% if sessions %}
+  <section class="section sessions-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.sessions_tag }}</span>
+        <h2>{{ t.detail_sessions_title }}</h2>
+      </div>
+      <div class="sessions-grid">
+        {% for s in sessions %}
+        <div class="session-card">
+          <div class="session-date">
+            <span class="session-day">{{ s.start_date[8:10] }}</span>
+            <span class="session-month">{{ s.start_date[5:7] }}/{{ s.start_date[:4] }}</span>
+          </div>
+          <div class="session-info">
+            <h4>{{ s.title }}</h4>
+            <div class="session-meta">
+              <span>{{ t.sessions_starts }}: {{ s.start_date }}</span>
+              <span>{{ t.sessions_location }}: {{ s.location }}</span>
+            </div>
+            <div class="session-spots">
+              <div class="spots-bar">
+                <div class="spots-fill" style="width:{{ (s.spots_taken / s.spots_total * 100)|int if s.spots_total > 0 else 0 }}%"></div>
+              </div>
+              <span class="spots-text">{{ t.sessions_spots }}: {{ s.spots_taken }}/{{ s.spots_total }}</span>
+            </div>
+          </div>
+          <div class="session-action">
+            {% if s.spots_taken >= s.spots_total %}
+              <span class="badge badge-danger">{{ t.sessions_full }}</span>
+            {% else %}
+              <a href="#inscription" class="btn btn-primary btn-sm">{{ t.sessions_register }}</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- FAQ -->
+  {% if faqs %}
+  <section class="section faq-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.faq_tag }}</span>
+        <h2>{{ t.detail_faq_title }}</h2>
+      </div>
+      <div class="faq-list">
+        {% for fq in faqs %}
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false">
+            <span>{{ fq.question }}</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer"><p>{{ fq.answer }}</p></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Related programmes -->
+  {% if related %}
+  <section class="section pdp-related">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ pole_label }}</span>
+        <h2>{{ t.detail_related_title }} <em>{{ t.detail_related_title_em }}</em></h2>
+      </div>
+      <div class="formations-grid">
+        {% for f in related %}
+        <article class="formation-card">
+          <a class="card-link" href="{{ formation_url_base }}{{ f.id }}" aria-label="{{ f.title }}"></a>
+          <div class="card-image">
+            <img src="{{ f.image or fallback_image }}" alt="{{ f.title }}" loading="lazy">
+          </div>
+          <div class="card-content">
+            <div class="card-meta">
+              <span>{{ f.duration }}</span>
+              <span class="meta-dot"></span>
+              <span>{{ f.diploma_type }}</span>
+            </div>
+            <h3>{{ f.title }}</h3>
+            <p>{{ f.description }}</p>
+            <span class="btn btn-card">{{ t.btn_learn_more }}</span>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Registration — the bottom of every programme page -->
+  <section class="section pdp-register" id="inscription">
+    <div class="container">
+      <div class="pdp-register-grid">
+        <div class="pdp-register-intro">
+          <span class="section-tag">{{ t.contact_tag }}</span>
+          <h2>{{ t.detail_register_title }} <em>{{ t.detail_register_title_em }}</em></h2>
+          <p>{{ t.detail_register_text }}</p>
+          <div class="pdp-register-facts">
+            <div><span>{{ t.info_duration }}</span><strong>{{ formation.duration }}</strong></div>
+            <div><span>{{ t.info_diploma }}</span><strong>{{ formation.diploma_type }}</strong></div>
+            {% if formation.next_start %}
+            <div><span>{{ t.info_start }}</span><strong>{{ formation.next_start }}</strong></div>
+            {% endif %}
+          </div>
+          <div class="contact-details">
+            <div class="contact-item">
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+              <div><strong>{{ t.contact_address }}</strong><p>{{ settings.get('address', '') }}</p></div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div>
+              <div><strong>{{ t.contact_phone }}</strong><p>{{ settings.get('phone', '') }}{% if settings.get('phone_2') %} / {{ settings.get('phone_2') }}{% endif %}</p></div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <div><strong>{{ t.contact_hours }}</strong><p>{{ settings.get('hours', '') }}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-form-wrapper">
+          <form class="contact-form" id="contactForm">
+            <h3>{{ t.form_title }}</h3>
+            <input type="hidden" name="inscription_type" value="individual">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prenom">{{ t.form_firstname }}</label>
+                <input type="text" id="prenom" name="prenom" required>
+              </div>
+              <div class="form-group">
+                <label for="nom">{{ t.form_lastname }}</label>
+                <input type="text" id="nom" name="nom" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="email">{{ t.form_email }}</label>
+              <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="telephone">{{ t.form_phone }}</label>
+              <input type="tel" id="telephone" name="telephone" required placeholder="+212 6XX-XXXXXX">
+            </div>
+            <div class="form-group">
+              <label for="formation">{{ t.form_formation }}</label>
+              <select id="formation" name="formation" required>
+                {% for f in formations %}
+                <option value="{{ f.title }}" {% if f.id == formation.id %}selected{% endif %}>{{ f.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="message">{{ t.form_message }}</label>
+              <textarea id="message" name="message" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-accent btn-full">{{ t.btn_apply }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% include 'public/_footer.html' %}
+
+  <script>
+    handleFormSubmit(document.getElementById('contactForm'), '/api/inscription', T.btn_apply);
+  </script>
+</body>
+</html>

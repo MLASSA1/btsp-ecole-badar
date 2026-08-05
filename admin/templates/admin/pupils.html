@@ -1,0 +1,77 @@
+{% extends "admin/base.html" %}
+{% block title %}Élèves{% endblock %}
+{% block page_title %}Élèves{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_pupil_add') }}" class="btn btn-primary">+ Ajouter un élève</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span>{{ pupils|length }} élève{{ 's' if pupils|length > 1 else '' }}</span>
+    <form method="GET" class="flex gap-2 items-center">
+      <select name="class_id" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
+        <option value="">Toutes les classes</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if class_filter == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Élève</th>
+          <th>Classe</th>
+          <th>Contact</th>
+          <th>Frais / mois</th>
+          <th>Inscrit le</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pupils %}
+        <tr>
+          <td><strong>{{ p.first_name }} {{ p.last_name }}</strong></td>
+          <td>
+            {% if p.class_name %}
+              {{ p.class_name }}
+            {% else %}
+              <span class="badge badge-warning">Sans classe</span>
+            {% endif %}
+          </td>
+          <td class="text-sm">
+            {{ p.phone or '—' }}
+            {% if p.guardian_phone %}<br><span class="text-muted">Tuteur : {{ p.guardian_phone }}</span>{% endif %}
+          </td>
+          <td>
+            {% if p.monthly_fee %}{{ '%.0f'|format(p.monthly_fee) }} MAD
+            {% else %}<span class="text-muted text-sm">Tarif de la classe</span>{% endif %}
+          </td>
+          <td class="text-sm text-muted">{{ p.enrolled_on or '—' }}</td>
+          <td>
+            {% if p.active %}<span class="badge badge-success">Actif</span>
+            {% else %}<span class="badge badge-muted">Inactif</span>{% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_pupil_edit', id=p.id) }}" class="btn btn-sm">Fiche</a>
+              <form method="POST" action="{{ url_for('admin_pupil_delete', id=p.id) }}"
+                    onsubmit="return confirm('Supprimer cet élève et tout son historique de paiement ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:40px" class="text-muted">
+          Aucun élève{% if class_filter %} dans cette classe{% endif %}.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ "Modifier l'enseignant" if teacher else "Nouvel enseignant" }}{% endblock %}
+{% block page_title %}{{ "Modifier l'enseignant" if teacher else "Nouvel enseignant" }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_teachers') }}" class="btn btn-sm">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:820px">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">Prénom</label>
+          <input type="text" id="first_name" name="first_name" required
+                 value="{{ teacher.first_name if teacher else '' }}">
+        </div>
+        <div class="form-group">
+          <label for="last_name">Nom</label>
+          <input type="text" id="last_name" name="last_name" required
+                 value="{{ teacher.last_name if teacher else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="phone">Téléphone</label>
+          <input type="text" id="phone" name="phone" value="{{ teacher.phone if teacher else '' }}">
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ teacher.email if teacher else '' }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="specialty">Spécialité</label>
+        <input type="text" id="specialty" name="specialty"
+               placeholder="Ex : Pâtisserie, Hôtellerie, Cybersécurité"
+               value="{{ teacher.specialty if teacher else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Présentation</label>
+        <textarea id="bio" name="bio" rows="3">{{ teacher.bio if teacher else '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="photo">Photo</label>
+        <input type="file" id="photo" name="photo" accept="image/*">
+        {% if teacher and teacher.photo %}
+          <div class="mt-2"><img src="{{ teacher.photo }}" class="thumb" alt=""></div>
+        {% endif %}
+      </div>
+
+      {% if teacher %}
+      <div class="form-group">
+        <label class="form-check">
+          <input type="checkbox" name="active" {% if teacher.active %}checked{% endif %}> Enseignant actif
+        </label>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary">
+        {{ "Mettre à jour" if teacher else "Ajouter l'enseignant" }}
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if teacher %}
+<div class="card" style="max-width:820px">
+  <div class="card-header"><span>Classes dont il est responsable</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Classe</th><th>Année</th><th>Salle</th><th></th></tr></thead>
+      <tbody>
+        {% for c in classes %}
+        <tr>
+          <td><strong>{{ c.name }}</strong></td>
+          <td>{{ c.academic_year or '—' }}</td>
+          <td>{{ c.room or '—' }}</td>
+          <td><a href="{{ url_for('admin_class_detail', id=c.id) }}" class="btn btn-sm">Ouvrir</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted" style="text-align:center;padding:28px">
+          Aucune classe assignée à cet enseignant.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

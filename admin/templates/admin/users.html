@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}Utilisateurs{% endblock %}
+{% block page_title %}Comptes administrateurs{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_user_add') }}" class="btn btn-primary">+ Nouveau compte</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <p class="text-sm text-muted" style="margin:0">
+      <strong>Administrateur du site</strong> : accès à tout le back-office (contenu, site, e-learning, école).<br>
+      <strong>Personnel école</strong> : accès uniquement à la section École — inscriptions, enseignants,
+      classes, élèves et paiements. Le reste est invisible et inaccessible.
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>{{ users|length }} compte{{ 's' if users|length > 1 else '' }}</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Nom complet</th>
+          <th>Rôle</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <strong>{{ u.username }}</strong>
+            {% if u.id == current_user.id %}<span class="badge badge-info" style="margin-left:8px">Vous</span>{% endif %}
+          </td>
+          <td class="text-sm">{{ u.full_name or '—' }}</td>
+          <td>
+            {% if u.role == 'super' %}
+              <span class="badge badge-info">Administrateur du site</span>
+            {% else %}
+              <span class="badge badge-muted">Personnel école</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_user_edit', id=u.id) }}" class="btn btn-sm">Modifier</a>
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('admin_user_delete', id=u.id) }}"
+                    onsubmit="return confirm('Supprimer ce compte ?')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

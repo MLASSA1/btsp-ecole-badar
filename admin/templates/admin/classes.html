@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+{% block title %}Classes{% endblock %}
+{% block page_title %}Classes{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_class_add') }}" class="btn btn-primary">+ Nouvelle classe</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span>{{ classes|length }} classe{{ 's' if classes|length > 1 else '' }}</span>
+    <a href="{{ url_for('admin_payments') }}" class="btn btn-sm">Voir les paiements</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Classe</th>
+          <th>Formation</th>
+          <th>Responsable</th>
+          <th>Élèves</th>
+          <th>Frais / mois</th>
+          <th>Année</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in classes %}
+        <tr>
+          <td>
+            <strong>{{ c.name }}</strong>
+            {% if c.room %}<br><span class="text-sm text-muted">Salle {{ c.room }}</span>{% endif %}
+          </td>
+          <td class="text-sm">{{ c.formation_title or '—' }}</td>
+          <td>
+            {% if c.teacher_first %}
+              {{ c.teacher_first }} {{ c.teacher_last }}
+            {% else %}
+              <span class="badge badge-warning">Sans responsable</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-info">{{ c.student_count }}</span></td>
+          <td>{{ '%.0f'|format(c.monthly_fee or 0) }} MAD</td>
+          <td class="text-sm">{{ c.academic_year or '—' }}</td>
+          <td>
+            {% if c.active %}<span class="badge badge-success">Active</span>
+            {% else %}<span class="badge badge-muted">Archivée</span>{% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin_class_detail', id=c.id) }}" class="btn btn-sm btn-primary">Ouvrir</a>
+              <a href="{{ url_for('admin_class_edit', id=c.id) }}" class="btn btn-sm">Modifier</a>
+              <form method="POST" action="{{ url_for('admin_class_delete', id=c.id) }}"
+                    onsubmit="return confirm('Supprimer cette classe ? Les élèves seront détachés mais conservés.')">
+                <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:40px" class="text-muted">
+          Aucune classe. Créez d'abord un enseignant, puis une classe.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

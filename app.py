@@ -1,8 +1,21 @@
+import hashlib
 import os
 import secrets
 import uuid
+from datetime import date
 from functools import wraps
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash as _generate_password_hash
+from werkzeug.security import check_password_hash
+
+# Werkzeug defaults to scrypt, which needs a Python built against a recent
+# OpenSSL. Fall back to pbkdf2 where scrypt is unavailable (e.g. the stock
+# macOS Python 3.9). check_password_hash reads the method from the stored
+# hash, so both kinds of hashes keep working side by side.
+PASSWORD_HASH_METHOD = "scrypt" if hasattr(hashlib, "scrypt") else "pbkdf2:sha256"
+
+
+def generate_password_hash(password):
+    return _generate_password_hash(password, method=PASSWORD_HASH_METHOD)
 from flask import (
     Flask, render_template, request, redirect, url_for,
     flash, jsonify, send_from_directory, g, abort, session as flask_session
@@ -104,7 +117,40 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "admin", "static"),
     static_url_path="/admin/static",
 )
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+def _load_secret_key():
+    """A stable key across workers and restarts.
+
+    A per-process random key means each gunicorn worker signs sessions with a
+    different secret, so users get logged out at random. Prefer the env var;
+    otherwise persist one next to the database.
+    """
+    env = os.environ.get("SECRET_KEY")
+    if env:
+        return env
+    keyfile = os.path.join(BASE_DIR, ".secret_key")
+    try:
+        with open(keyfile) as fh:
+            saved = fh.read().strip()
+        if saved:
+            return saved
+    except OSError:
+        pass
+    generated = secrets.token_hex(32)
+    try:
+        with open(keyfile, "w") as fh:
+            fh.write(generated)
+        os.chmod(keyfile, 0o600)
+    except OSError:
+        print(">>> WARNING: could not persist SECRET_KEY; set the SECRET_KEY env var.")
+    return generated
+
+
+app.config["SECRET_KEY"] = _load_secret_key()
+# SameSite=Lax stops the browser sending session cookies on cross-site POSTs,
+# which is what a CSRF attack needs.
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("HTTPS", "").lower() in ("1", "true", "yes")
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
 
 login_manager = LoginManager()
@@ -162,7 +208,10 @@ def init_db():
         f"""CREATE TABLE IF NOT EXISTS admin_user (
             id {auto_id if USE_PG else 'INTEGER PRIMARY KEY'},
             username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'super',
+            full_name TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""",
         f"""CREATE TABLE IF NOT EXISTS site_settings (
             key TEXT PRIMARY KEY,
@@ -182,6 +231,13 @@ def init_db():
             active INTEGER DEFAULT 1,
             category TEXT NOT NULL DEFAULT 'culinary',
             lang TEXT NOT NULL DEFAULT 'fr',
+            long_description TEXT DEFAULT '',
+            program_content TEXT DEFAULT '',
+            prerequisites TEXT DEFAULT '',
+            career_outcomes TEXT DEFAULT '',
+            schedule TEXT DEFAULT '',
+            price TEXT DEFAULT '',
+            next_start TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""",
         f"""CREATE TABLE IF NOT EXISTS certificates (
@@ -390,6 +446,63 @@ def init_db():
             budget TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""",
+        # --------- School administration: teachers, classes, pupils, fees ---------
+        f"""CREATE TABLE IF NOT EXISTS teachers (
+            id {auto_id},
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            specialty TEXT DEFAULT '',
+            bio TEXT DEFAULT '',
+            photo TEXT DEFAULT '',
+            active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
+        f"""CREATE TABLE IF NOT EXISTS school_classes (
+            id {auto_id},
+            name TEXT NOT NULL,
+            formation_id INTEGER,
+            teacher_id INTEGER,
+            academic_year TEXT DEFAULT '',
+            monthly_fee REAL DEFAULT 0,
+            room TEXT DEFAULT '',
+            schedule TEXT DEFAULT '',
+            start_date TEXT DEFAULT '',
+            end_date TEXT DEFAULT '',
+            active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
+        f"""CREATE TABLE IF NOT EXISTS class_students (
+            id {auto_id},
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
+            guardian_phone TEXT DEFAULT '',
+            class_id INTEGER,
+            monthly_fee REAL DEFAULT 0,
+            enrolled_on TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
+        # One row per pupil per month. No row at all means "not paid yet", so a
+        # fresh month needs no seeding.
+        f"""CREATE TABLE IF NOT EXISTS payments (
+            id {auto_id},
+            student_id INTEGER NOT NULL,
+            class_id INTEGER,
+            year INTEGER NOT NULL,
+            month INTEGER NOT NULL,
+            amount REAL DEFAULT 0,
+            status TEXT DEFAULT 'paid',
+            method TEXT DEFAULT '',
+            paid_on TEXT DEFAULT '',
+            note TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (student_id, year, month)
+        )""",
     ]
 
     _run_ddl(db, tables)
@@ -410,7 +523,7 @@ def init_db():
         "site_name_full": "École BADAR Training and Service",
         "site_tagline": "Établissement Privé de Formation Professionnelle",
         "about_title": "Un Centre d'Excellence au Service de Votre Avenir",
-        "about_text": "BTSP est un établissement privé de formation professionnelle à Guelmim, spécialisé dans les arts culinaires, l'hôtellerie et les technologies de l'information. Notre pédagogie allie pratique intensive et expertise professionnelle.",
+        "about_text": "BTSP est un établissement privé de formation professionnelle au Maroc, spécialisé dans les arts culinaires, l'hôtellerie et les technologies de l'information. Notre pédagogie allie pratique intensive, expertise professionnelle et cours en ligne.",
         "about_text_2": "Notre centre offre un cadre moderne et professionnel, équipé des dernières technologies pour vous préparer aux exigences du marché national et international.",
         "address": "شارع المقاومة بقرب من صيدلية المقاومة زنقة 07 طابق الثاني، كلميم",
         "phone": "06.37.48.62.76",
@@ -436,8 +549,11 @@ def init_db():
         "hero_bg_image": "",
         "show_hero": "1",
         "show_about": "1",
+        "show_pillars": "1",
         "show_services": "1",
         "show_formations": "1",
+        "show_online": "1",
+        "show_process": "1",
         "show_certificates": "1",
         "show_gallery": "1",
         "show_testimonials": "1",
@@ -453,19 +569,34 @@ def init_db():
     count = db.execute("SELECT COUNT(*) FROM formations").fetchone()[0]
     if count == 0:
         seed_formations = [
-            # Culinary formations (FR)
-            ("Cake Design & Décoration", "Maîtrisez l'art du cake design : pâte à sucre, modelage, wedding cakes, gâteaux 3D et techniques de décoration avancées.", "6 Mois", "Certificat", "Pâte à sucre & fondant|Wedding cakes & pièces montées|Modelage & sculpture|Aérographe & techniques modernes", "", "Populaire", 0, 1, "culinary", "fr"),
-            ("Pâtisserie Professionnelle", "Formation complète en pâtisserie française et marocaine : viennoiseries, entremets, chocolaterie, confiserie et pâtisserie moderne.", "12 Mois", "Diplôme", "Pâtisserie française & marocaine|Chocolaterie & confiserie|Entremets & desserts à l'assiette|Gestion de laboratoire", "", "Excellence", 1, 2, "culinary", "fr"),
-            ("Arts Culinaires & Cuisine", "Développez vos compétences en cuisine internationale et marocaine : techniques de cuisson, dressage, hygiène alimentaire et gestion de cuisine.", "9 Mois", "Diplôme", "Cuisine marocaine & internationale|Techniques de cuisson avancées|Hygiène & sécurité alimentaire|Dressage & présentation", "", "", 0, 3, "culinary", "fr"),
-            ("Boulangerie & Viennoiserie", "Apprenez les secrets du pain artisanal et des viennoiseries : pétrissage, fermentation, façonnage et cuisson parfaite.", "3 Mois", "Certificat", "Pains traditionnels & spéciaux|Viennoiseries classiques|Fermentation & levains|Techniques artisanales", "", "", 0, 5, "culinary", "fr"),
-            ("Chocolaterie & Confiserie", "Explorez l'univers du chocolat : tempérage, moulage, ganaches, bonbons et créations artistiques en chocolat.", "4 Mois", "Certificat", "Tempérage & techniques|Bonbons & pralinés|Pièces artistiques|Confiserie traditionnelle", "", "", 0, 6, "culinary", "fr"),
-            # Hospitality (FR)
-            ("Hôtellerie & Restauration", "Préparez-vous aux métiers de l'hôtellerie : accueil, service en salle, gestion hôtelière, organisation d'événements et management.", "12 Mois", "Diplôme", "Accueil & réception|Service en salle & bar|Gestion hôtelière|Organisation d'événements", "", "", 0, 4, "hospitality", "fr"),
-            # IT formations (FR)
-            ("Intelligence Artificielle & Machine Learning", "Maîtrisez les fondamentaux de l'IA : Python, deep learning, NLP, vision par ordinateur et déploiement de modèles ML en production.", "6 Mois", "Certificat", "Python pour l'IA|Deep Learning & réseaux de neurones|NLP & vision par ordinateur|Déploiement de modèles ML", "", "Nouveau", 0, 7, "it", "fr"),
-            ("Cloud Computing & DevOps", "Formation complète en cloud computing : AWS, Azure, GCP, conteneurisation Docker/Kubernetes, CI/CD et infrastructure as code.", "9 Mois", "Diplôme", "AWS, Azure & GCP|Docker & Kubernetes|CI/CD & automatisation|Terraform & Infrastructure as Code", "", "Demandé", 1, 8, "it", "fr"),
-            ("Cybersécurité", "Protégez les systèmes et réseaux : tests de pénétration, sécurité réseau, cryptographie, réponse aux incidents et conformité.", "6 Mois", "Certificat", "Tests de pénétration & ethical hacking|Sécurité réseau & pare-feu|Cryptographie & PKI|Réponse aux incidents & SIEM", "", "", 0, 9, "it", "fr"),
-            ("DevOps & CI/CD", "Automatisez le cycle de développement : Git, Jenkins, GitHub Actions, monitoring, observabilité et pratiques SRE.", "4 Mois", "Certificat", "Git & gestion de versions|Jenkins & GitHub Actions|Monitoring & observabilité|Pratiques SRE & fiabilité", "", "", 0, 10, "it", "fr"),
+            # Catalogue réel BTSP. Les durées non communiquées par l'école sont
+            # renseignées « Nous consulter » plutôt qu'inventées.
+            ("Réceptionniste d'Hôtel", 'Accueil et enregistrement des clients, gestion des réservations, facturation et relation client en établissement hôtelier.', 'Nous consulter', 'Certificat', 'Accueil & check-in / check-out|Gestion des réservations|Facturation et encaissement|Logiciels de réception', '', '', 0, 1, 'hospitality', "fr"),
+            ('Femme de Chambre / Valet de Chambre', "Entretien et remise en état des chambres, gestion du linge, produits et protocoles d'hygiène en hôtellerie.", 'Nous consulter', 'Certificat', "Remise en état des chambres|Gestion du linge et des stocks d'étage|Produits et protocoles d'hygiène|Organisation et rapidité d'exécution", '', '', 0, 2, 'hospitality', "fr"),
+            ('Barman – Barista', 'Préparation des boissons chaudes et froides, techniques de bar, cocktails, extraction du café et service au comptoir.', 'Nous consulter', 'Certificat', 'Techniques de bar et cocktails|Extraction et latte art|Carte des boissons|Service au comptoir', '', '', 0, 3, 'hospitality', "fr"),
+            ('Service en Restauration Gastronomique', 'Service en salle haut de gamme : mise en place, techniques de service, accord mets et boissons, relation avec la clientèle.', 'Nous consulter', 'Certificat', "Mise en place et dressage|Techniques de service à l'assiette|Accord mets et boissons|Prise de commande et conseil", '', '', 0, 4, 'hospitality', "fr"),
+            ('Relation Client et Accueil', "Techniques d'accueil, gestion des réclamations et qualité de service dans les métiers en contact avec la clientèle.", 'Nous consulter', 'Attestation', "Techniques d'accueil|Gestion des réclamations|Qualité de service|Fidélisation de la clientèle", '', '', 0, 5, 'hospitality', "fr"),
+            ('Cuisine Marocaine et Internationale', 'Techniques de cuisson, préparations de base, cuisine marocaine traditionnelle et grands classiques de la cuisine internationale.', 'Nous consulter', 'Certificat', 'Techniques de cuisson et découpe|Cuisine marocaine traditionnelle|Cuisine internationale|Hygiène et organisation du poste', '', 'Populaire', 1, 10, 'culinary', "fr"),
+            ('Boulangerie', 'Pétrissage, fermentation, façonnage et cuisson : pains traditionnels, pains spéciaux et viennoiseries.', 'Nous consulter', 'Certificat', 'Pétrissage et fermentation|Pains traditionnels et spéciaux|Viennoiseries|Cuisson et finition', '', '', 0, 11, 'culinary', "fr"),
+            ('Boucherie et Charcuterie', "Découpe et désossage, préparation des viandes, charcuterie, conservation et présentation à l'étal.", 'Nous consulter', 'Certificat', 'Découpe et désossage|Préparations bouchères|Charcuterie et salaisons|Conservation et traçabilité', '', '', 0, 12, 'culinary', "fr"),
+            ('Traiteur et Organisation des Événements', 'Conception de buffets, production en volume, logistique et coordination des prestations traiteur et événementielles.', 'Nous consulter', 'Certificat', 'Conception de buffets et menus|Production en volume|Logistique et matériel|Coordination du jour J', '', '', 0, 13, 'culinary', "fr"),
+            ('Décoration et Présentation des Plats', "Dressage à l'assiette, harmonie des couleurs, techniques de décoration et mise en valeur des préparations.", 'Nous consulter', 'Certificat', "Dressage à l'assiette|Harmonie des couleurs et volumes|Techniques de décor|Photographie culinaire", '', '', 0, 14, 'culinary', "fr"),
+            ('Sécurité Alimentaire (Food Safety)', "Règles d'hygiène en cuisine professionnelle, chaîne du froid, traçabilité et principes HACCP.", 'Nous consulter', 'Attestation', 'Hygiène du personnel et des locaux|Chaîne du froid et stockage|Traçabilité|Principes HACCP', '', '', 0, 15, 'culinary', "fr"),
+            ('Gestion des Stocks et Approvisionnement', 'Réception et contrôle des marchandises, rotation des stocks, inventaires et relation avec les fournisseurs.', 'Nous consulter', 'Certificat', 'Réception et contrôle|Rotation et rangement des stocks|Inventaires|Commandes et fournisseurs', '', '', 0, 20, 'business', "fr"),
+            ('Commerce et Vente', 'Techniques de vente, argumentaire commercial, négociation et suivi de la clientèle.', 'Nous consulter', 'Certificat', 'Techniques de vente|Argumentaire et négociation|Suivi client|Objectifs et reporting', '', '', 0, 21, 'business', "fr"),
+            ("Entrepreneuriat et Création d'Entreprise", "De l'idée au projet : étude de marché, business plan, démarches de création et gestion des premiers mois d'activité.", 'Nous consulter', 'Certificat', 'Étude de marché|Business plan|Démarches de création|Gestion et financement', '', '', 0, 22, 'business', "fr"),
+            ('Informatique Bureautique (Word, Excel, PowerPoint)', 'Maîtrise des outils bureautiques du quotidien : traitement de texte, tableurs et présentations professionnelles.', 'Nous consulter', 'Certificat', 'Word — documents professionnels|Excel — tableaux et formules|PowerPoint — présentations|Organisation des fichiers et impression', '', '', 0, 30, 'business', "fr"),
+            ('Marketing Digital', 'Présence en ligne, réseaux sociaux, création de contenu et campagnes publicitaires pour développer une activité.', 'Nous consulter', 'Certificat', 'Réseaux sociaux et communauté|Création de contenu|Publicité en ligne|Analyse des résultats', '', 'Demandé', 0, 31, 'business', "fr"),
+            ('Langue Française Professionnelle', 'Français appliqué au monde du travail : expression orale et écrite, vocabulaire métier et correspondance professionnelle.', 'Nous consulter', 'Attestation', 'Expression orale|Expression écrite|Vocabulaire métier|Correspondance professionnelle', '', '', 0, 40, 'languages', "fr"),
+            ("Anglais Professionnel pour l'Hôtellerie et le Tourisme", "Anglais opérationnel pour l'accueil, la réception, le service et la relation avec une clientèle internationale.", 'Nous consulter', 'Attestation', "Accueil et réception en anglais|Vocabulaire de l'hôtellerie|Service et restauration|Situations client courantes", '', '', 0, 41, 'languages', "fr"),
+            ('Techniques de Communication Professionnelle', 'Communiquer efficacement en milieu professionnel : écoute, expression, travail en équipe et gestion des situations difficiles.', 'Nous consulter', 'Attestation', 'Écoute et reformulation|Expression en public|Travail en équipe|Gestion des situations difficiles', '', '', 0, 42, 'languages', "fr"),
+            ("Technicien en Laboratoire d'Analyses Médicales", "Diplôme reconnu par l'État — تقني في مختبر التحاليل الطبية. Prélèvements, techniques d'analyse, hygiène et sécurité au laboratoire.", '1 An', "Diplôme d'État", "Prélèvements et manipulation|Techniques d'analyse|Hygiène et sécurité au laboratoire|Gestion des résultats", '', "Diplôme d'État", 1, 50, 'health', "fr"),
+            ('Aide aux Personnes Âgées', "Diplôme reconnu par l'État — رعاية المسنين. Accompagnement quotidien, soins de confort et relation d'aide auprès des personnes âgées.", '1 An', "Diplôme d'État", "Accompagnement au quotidien|Soins de confort et d'hygiène|Relation d'aide et écoute|Prévention et sécurité", '', "Diplôme d'État", 0, 51, 'health', "fr"),
+            ('Aide-Soignant / Assistant Thérapeute', "Diplôme reconnu par l'État — مساعد معالج. Assistance aux soins, hygiène, confort du patient et travail en équipe soignante.", '1 An', "Diplôme d'État", 'Assistance aux soins|Hygiène et confort du patient|Surveillance et transmission|Travail en équipe soignante', '', "Diplôme d'État", 0, 52, 'health', "fr"),
+            ("Technicien en Animation de Crèche et Jardin d'Enfants", "Diplôme reconnu par l'État — تقني في تنشيط الحضانة ورياض الأطفال. Encadrement, éveil et sécurité des jeunes enfants.", '2 Ans', "Diplôme d'État", "Développement de l'enfant|Activités d'éveil et animation|Hygiène et sécurité|Relation avec les familles", '', "Diplôme d'État", 1, 53, 'health', "fr"),
+            ('Premiers Secours (Secourisme)', 'Gestes qui sauvent, conduite à tenir face à un accident et alerte des secours en milieu professionnel.', 'Nous consulter', 'Attestation', "Protection et alerte|Gestes qui sauvent|Situations d'urgence courantes|Trousse de secours", '', '', 0, 54, 'health', "fr"),
+            ("Cuisine — Diplôme d'État", "Diplôme reconnu par l'État — طبخ. Parcours complet d'une année : techniques culinaires, production et organisation en cuisine professionnelle.", '1 An', "Diplôme d'État", 'Techniques culinaires fondamentales|Production et service|Hygiène et sécurité alimentaire|Organisation de la cuisine', '', "Diplôme d'État", 1, 16, 'culinary', "fr"),
+            ("Pâtisserie — Diplôme d'État", "Diplôme reconnu par l'État — الحلويات. Parcours complet d'une année : pâtes, crèmes, entremets et pâtisserie marocaine et internationale.", '1 An', "Diplôme d'État", 'Pâtes, crèmes et cuissons|Entremets et desserts|Pâtisserie marocaine|Organisation du laboratoire', '', "Diplôme d'État", 1, 17, 'culinary', "fr"),
         ]
         for f in seed_formations:
             db.execute(
@@ -545,9 +676,6 @@ def init_db():
 
 def migrate_db():
     """Add new columns to existing databases (idempotent)."""
-    if USE_PG:
-        return
-    db = sqlite3.connect(DB_PATH)
     migrations = [
         "ALTER TABLE formations ADD COLUMN category TEXT NOT NULL DEFAULT 'culinary'",
         "ALTER TABLE formations ADD COLUMN lang TEXT NOT NULL DEFAULT 'fr'",
@@ -559,7 +687,33 @@ def migrate_db():
         "ALTER TABLE inscriptions ADD COLUMN num_participants INTEGER DEFAULT 1",
         "ALTER TABLE inscriptions ADD COLUMN desired_dates TEXT DEFAULT ''",
         "ALTER TABLE inscriptions ADD COLUMN budget TEXT DEFAULT ''",
+        # Detail-page fields. All optional — the page falls back to the summary
+        # fields when a formation has not been filled in yet.
+        "ALTER TABLE formations ADD COLUMN long_description TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN program_content TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN prerequisites TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN career_outcomes TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN schedule TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN price TEXT DEFAULT ''",
+        "ALTER TABLE formations ADD COLUMN next_start TEXT DEFAULT ''",
+        # Existing admins keep full access; new school staff are created as 'school'.
+        "ALTER TABLE admin_user ADD COLUMN role TEXT NOT NULL DEFAULT 'super'",
+        "ALTER TABLE admin_user ADD COLUMN full_name TEXT DEFAULT ''",
     ]
+    if USE_PG:
+        # Postgres aborts the whole transaction on a failed statement, so each
+        # ALTER needs its own connection-level commit and IF NOT EXISTS.
+        conn = PgConnectionWrapper(DATABASE_URL)
+        for sql in migrations:
+            try:
+                conn.execute(sql.replace("ADD COLUMN", "ADD COLUMN IF NOT EXISTS", 1))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        conn.close()
+        return
+
+    db = sqlite3.connect(DB_PATH)
     for sql in migrations:
         try:
             db.execute(sql)
@@ -572,18 +726,42 @@ def migrate_db():
 # --------------- Auth ---------------
 
 class AdminUser(UserMixin):
-    def __init__(self, id, username):
+    """role is 'super' (everything) or 'school' (École section only)."""
+
+    def __init__(self, id, username, role="super", full_name=""):
         self.id = id
         self.username = username
+        self.role = role or "super"
+        self.full_name = full_name or ""
+
+    @property
+    def is_super(self):
+        return self.role == "super"
 
 
 @login_manager.user_loader
 def load_user(user_id):
     db = get_db()
-    row = db.execute("SELECT id, username FROM admin_user WHERE id = ?", (user_id,)).fetchone()
+    row = db.execute(
+        "SELECT id, username, role, full_name FROM admin_user WHERE id = ?", (user_id,)
+    ).fetchone()
     if row:
-        return AdminUser(row["id"], row["username"])
+        return AdminUser(row["id"], row["username"], row["role"], row["full_name"])
     return None
+
+
+def super_required(view):
+    """Guards everything outside the École section from school staff."""
+
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not current_user.is_super:
+            flash("Cette section est réservée à l'administrateur du site.", "error")
+            return redirect(url_for("admin_dashboard"))
+        return view(*args, **kwargs)
+
+    return wrapped
 
 
 # --------------- File upload helpers ---------------
@@ -614,11 +792,23 @@ def get_settings():
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_DIR, filename)
+    response = send_from_directory(UPLOAD_DIR, filename)
+    # Uploads are user-supplied. An SVG can carry <script>, so serve them under
+    # a CSP that forbids scripting and stop the browser sniffing content types.
+    response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+# BASE_DIR is the project root — it holds app.py and database.db. Only the two
+# public stylesheets may be served from it, never the whole directory.
+PUBLIC_ASSETS = {"style.css", "app.css"}
 
 
 @app.route("/static-site/<path:filename>")
 def static_site(filename):
+    if filename not in PUBLIC_ASSETS:
+        abort(404)
     return send_from_directory(BASE_DIR, filename)
 
 
@@ -693,6 +883,15 @@ def render_public(lang):
     partners = db.execute(
         "SELECT * FROM partners WHERE active = 1 ORDER BY sort_order"
     ).fetchall()
+    # Online catalogue from the e-learning module, shown on the landing page.
+    online_courses = db.execute(
+        "SELECT * FROM courses WHERE active = 1 AND lang = ? ORDER BY created_at DESC LIMIT 6",
+        (lang,),
+    ).fetchall()
+    if not online_courses and lang != "fr":
+        online_courses = db.execute(
+            "SELECT * FROM courses WHERE active = 1 AND lang = 'fr' ORDER BY created_at DESC LIMIT 6"
+        ).fetchall()
     hero_title = settings.get(f"hero_title_{lang}", t.get("hero_title", ""))
     hero_subtitle = settings.get(f"hero_subtitle_{lang}", t.get("hero_subtitle", ""))
     return render_template(
@@ -706,8 +905,68 @@ def render_public(lang):
         faqs=faqs,
         sessions=sessions,
         partners=partners,
+        online_courses=online_courses,
         hero_title=hero_title,
         hero_subtitle=hero_subtitle,
+        t=t,
+        lang=lang,
+        supported_langs=SUPPORTED_LANGS,
+    )
+
+
+@app.route("/formation/<int:formation_id>")
+def formation_detail_default(formation_id):
+    return render_formation(formation_id, "fr")
+
+
+@app.route("/<lang>/formation/<int:formation_id>")
+def formation_detail_lang(lang, formation_id):
+    if lang not in SUPPORTED_LANGS:
+        abort(404)
+    return render_formation(formation_id, lang)
+
+
+def render_formation(formation_id, lang):
+    db = get_db()
+    formation = db.execute(
+        "SELECT * FROM formations WHERE id = ? AND active = 1", (formation_id,)
+    ).fetchone()
+    if not formation:
+        abort(404)
+
+    settings = get_settings()
+    t = TRANSLATIONS.get(lang, TRANSLATIONS[DEFAULT_LANG])
+
+    # Other programmes from the same pôle, to keep browsing going.
+    related = db.execute(
+        "SELECT * FROM formations WHERE active = 1 AND category = ? AND id != ? AND lang = ?"
+        " ORDER BY sort_order LIMIT 3",
+        (formation["category"], formation_id, formation["lang"]),
+    ).fetchall()
+
+    sessions = db.execute(
+        "SELECT * FROM training_sessions WHERE active = 1 AND lang = ? ORDER BY start_date LIMIT 3",
+        (lang,),
+    ).fetchall()
+
+    faqs = db.execute(
+        "SELECT * FROM faqs WHERE active = 1 AND lang = ? ORDER BY sort_order LIMIT 5",
+        (lang,),
+    ).fetchall()
+
+    all_formations = db.execute(
+        "SELECT id, title FROM formations WHERE active = 1 AND lang = ? ORDER BY sort_order",
+        (formation["lang"],),
+    ).fetchall()
+
+    return render_template(
+        "public/formation.html",
+        settings=settings,
+        formation=formation,
+        related=related,
+        sessions=sessions,
+        faqs=faqs,
+        formations=all_formations,
         t=t,
         lang=lang,
         supported_langs=SUPPORTED_LANGS,
@@ -790,11 +1049,11 @@ def login():
         password = request.form.get("password", "")
         db = get_db()
         row = db.execute(
-            "SELECT id, username, password_hash FROM admin_user WHERE username = ?",
+            "SELECT id, username, password_hash, role, full_name FROM admin_user WHERE username = ?",
             (username,),
         ).fetchone()
         if row and check_password_hash(row["password_hash"], password):
-            login_user(AdminUser(row["id"], row["username"]))
+            login_user(AdminUser(row["id"], row["username"], row["role"], row["full_name"]))
             return redirect(url_for("admin_dashboard"))
         flash("Identifiants incorrects.", "error")
     return render_template("admin/login.html")
@@ -813,6 +1072,47 @@ def logout():
 @login_required
 def admin_dashboard():
     db = get_db()
+
+    # School staff get a school dashboard; they never see site-content counters.
+    if not current_user.is_super:
+        today = date.today()
+        pupils = db.execute("SELECT COUNT(*) FROM class_students WHERE active=1").fetchone()[0]
+        paid = db.execute(
+            "SELECT COUNT(*) FROM payments WHERE year=? AND month=? AND status='paid'",
+            (today.year, today.month),
+        ).fetchone()[0]
+        collected = db.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE year=? AND month=? AND status='paid'",
+            (today.year, today.month),
+        ).fetchone()[0]
+        school_stats = {
+            "teachers": db.execute("SELECT COUNT(*) FROM teachers WHERE active=1").fetchone()[0],
+            "classes": db.execute("SELECT COUNT(*) FROM school_classes WHERE active=1").fetchone()[0],
+            "pupils": pupils,
+            "paid": paid,
+            "unpaid": max(pupils - paid, 0),
+            "collected": collected or 0,
+            "inscriptions_new": db.execute(
+                "SELECT COUNT(*) FROM inscriptions WHERE status='nouveau'"
+            ).fetchone()[0],
+        }
+        classes = db.execute(
+            """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
+                      (SELECT COUNT(*) FROM class_students s WHERE s.class_id = c.id AND s.active = 1) AS student_count
+                 FROM school_classes c
+                 LEFT JOIN teachers t ON c.teacher_id = t.id
+                WHERE c.active = 1
+                ORDER BY c.name"""
+        ).fetchall()
+        return render_template(
+            "admin/school_dashboard.html",
+            stats=school_stats,
+            classes=classes,
+            month_label=MONTHS_FR[today.month - 1],
+            year=today.year,
+            month=today.month,
+        )
+
     stats = {
         "formations": db.execute("SELECT COUNT(*) FROM formations WHERE active=1").fetchone()[0],
         "certificates": db.execute("SELECT COUNT(*) FROM certificates WHERE active=1").fetchone()[0],
@@ -830,7 +1130,7 @@ def admin_dashboard():
 # --------------- Admin: Formations CRUD ---------------
 
 @app.route("/admin/formations")
-@login_required
+@super_required
 def admin_formations():
     db = get_db()
     formations = db.execute("SELECT * FROM formations ORDER BY sort_order").fetchall()
@@ -838,7 +1138,7 @@ def admin_formations():
 
 
 @app.route("/admin/formations/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_formation_add():
     if request.method == "POST":
         image_url = ""
@@ -846,7 +1146,7 @@ def admin_formation_add():
             image_url = save_upload(request.files["image"], "formations") or ""
         db = get_db()
         db.execute(
-            "INSERT INTO formations (title, description, duration, diploma_type, features, image, badge, featured, sort_order, category, lang) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO formations (title, description, duration, diploma_type, features, image, badge, featured, sort_order, category, lang, long_description, program_content, prerequisites, career_outcomes, schedule, price, next_start) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 request.form["title"].strip(),
                 request.form["description"].strip(),
@@ -859,6 +1159,13 @@ def admin_formation_add():
                 int(request.form.get("sort_order", 0)),
                 request.form.get("category", "culinary"),
                 request.form.get("lang", "fr"),
+                request.form.get("long_description", "").strip(),
+                request.form.get("program_content", "").strip(),
+                request.form.get("prerequisites", "").strip(),
+                request.form.get("career_outcomes", "").strip(),
+                request.form.get("schedule", "").strip(),
+                request.form.get("price", "").strip(),
+                request.form.get("next_start", "").strip(),
             ),
         )
         db.commit()
@@ -868,7 +1175,7 @@ def admin_formation_add():
 
 
 @app.route("/admin/formations/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_formation_edit(id):
     db = get_db()
     formation = db.execute("SELECT * FROM formations WHERE id = ?", (id,)).fetchone()
@@ -880,7 +1187,7 @@ def admin_formation_edit(id):
         if "image" in request.files and request.files["image"].filename:
             image_url = save_upload(request.files["image"], "formations") or image_url
         db.execute(
-            "UPDATE formations SET title=?, description=?, duration=?, diploma_type=?, features=?, image=?, badge=?, featured=?, sort_order=?, category=?, lang=? WHERE id=?",
+            "UPDATE formations SET title=?, description=?, duration=?, diploma_type=?, features=?, image=?, badge=?, featured=?, sort_order=?, category=?, lang=?, long_description=?, program_content=?, prerequisites=?, career_outcomes=?, schedule=?, price=?, next_start=? WHERE id=?",
             (
                 request.form["title"].strip(),
                 request.form["description"].strip(),
@@ -893,6 +1200,13 @@ def admin_formation_edit(id):
                 int(request.form.get("sort_order", 0)),
                 request.form.get("category", "culinary"),
                 request.form.get("lang", "fr"),
+                request.form.get("long_description", "").strip(),
+                request.form.get("program_content", "").strip(),
+                request.form.get("prerequisites", "").strip(),
+                request.form.get("career_outcomes", "").strip(),
+                request.form.get("schedule", "").strip(),
+                request.form.get("price", "").strip(),
+                request.form.get("next_start", "").strip(),
                 id,
             ),
         )
@@ -903,7 +1217,7 @@ def admin_formation_edit(id):
 
 
 @app.route("/admin/formations/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_formation_delete(id):
     db = get_db()
     db.execute("DELETE FROM formations WHERE id = ?", (id,))
@@ -913,7 +1227,7 @@ def admin_formation_delete(id):
 
 
 @app.route("/admin/formations/<int:id>/toggle", methods=["POST"])
-@login_required
+@super_required
 def admin_formation_toggle(id):
     db = get_db()
     db.execute("UPDATE formations SET active = CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=?", (id,))
@@ -924,7 +1238,7 @@ def admin_formation_toggle(id):
 # --------------- Admin: Certificates CRUD ---------------
 
 @app.route("/admin/certificates")
-@login_required
+@super_required
 def admin_certificates():
     db = get_db()
     certificates = db.execute("SELECT * FROM certificates ORDER BY sort_order").fetchall()
@@ -932,7 +1246,7 @@ def admin_certificates():
 
 
 @app.route("/admin/certificates/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_certificate_add():
     db = get_db()
     if request.method == "POST":
@@ -953,7 +1267,7 @@ def admin_certificate_add():
 
 
 @app.route("/admin/certificates/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_certificate_edit(id):
     db = get_db()
     certificate = db.execute("SELECT * FROM certificates WHERE id = ?", (id,)).fetchone()
@@ -979,7 +1293,7 @@ def admin_certificate_edit(id):
 
 
 @app.route("/admin/certificates/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_certificate_delete(id):
     db = get_db()
     db.execute("DELETE FROM certificates WHERE id = ?", (id,))
@@ -991,7 +1305,7 @@ def admin_certificate_delete(id):
 # --------------- Admin: Testimonials CRUD ---------------
 
 @app.route("/admin/testimonials")
-@login_required
+@super_required
 def admin_testimonials():
     db = get_db()
     testimonials = db.execute("SELECT * FROM testimonials ORDER BY created_at DESC").fetchall()
@@ -999,7 +1313,7 @@ def admin_testimonials():
 
 
 @app.route("/admin/testimonials/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_testimonial_add():
     if request.method == "POST":
         name = request.form["name"].strip()
@@ -1022,7 +1336,7 @@ def admin_testimonial_add():
 
 
 @app.route("/admin/testimonials/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_testimonial_edit(id):
     db = get_db()
     testimonial = db.execute("SELECT * FROM testimonials WHERE id = ?", (id,)).fetchone()
@@ -1050,7 +1364,7 @@ def admin_testimonial_edit(id):
 
 
 @app.route("/admin/testimonials/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_testimonial_delete(id):
     db = get_db()
     db.execute("DELETE FROM testimonials WHERE id = ?", (id,))
@@ -1062,7 +1376,7 @@ def admin_testimonial_delete(id):
 # --------------- Admin: Gallery CRUD ---------------
 
 @app.route("/admin/gallery")
-@login_required
+@super_required
 def admin_gallery():
     db = get_db()
     images = db.execute("SELECT * FROM gallery ORDER BY sort_order").fetchall()
@@ -1070,7 +1384,7 @@ def admin_gallery():
 
 
 @app.route("/admin/gallery/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_gallery_add():
     if request.method == "POST":
         image_url = save_upload(request.files.get("image"), "gallery")
@@ -1095,7 +1409,7 @@ def admin_gallery_add():
 
 
 @app.route("/admin/gallery/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_gallery_edit(id):
     db = get_db()
     image = db.execute("SELECT * FROM gallery WHERE id = ?", (id,)).fetchone()
@@ -1124,7 +1438,7 @@ def admin_gallery_edit(id):
 
 
 @app.route("/admin/gallery/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_gallery_delete(id):
     db = get_db()
     db.execute("DELETE FROM gallery WHERE id = ?", (id,))
@@ -1166,7 +1480,7 @@ def admin_inscription_delete(id):
 # --------------- Admin: Custom Sections CRUD ---------------
 
 @app.route("/admin/sections")
-@login_required
+@super_required
 def admin_sections():
     db = get_db()
     sections = db.execute("SELECT * FROM custom_sections ORDER BY sort_order").fetchall()
@@ -1174,7 +1488,7 @@ def admin_sections():
 
 
 @app.route("/admin/sections/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_section_add():
     if request.method == "POST":
         image_url = ""
@@ -1207,7 +1521,7 @@ def admin_section_add():
 
 
 @app.route("/admin/sections/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_section_edit(id):
     db = get_db()
     section = db.execute("SELECT * FROM custom_sections WHERE id = ?", (id,)).fetchone()
@@ -1245,7 +1559,7 @@ def admin_section_edit(id):
 
 
 @app.route("/admin/sections/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_section_delete(id):
     db = get_db()
     db.execute("DELETE FROM custom_sections WHERE id = ?", (id,))
@@ -1255,7 +1569,7 @@ def admin_section_delete(id):
 
 
 @app.route("/admin/sections/<int:id>/toggle", methods=["POST"])
-@login_required
+@super_required
 def admin_section_toggle(id):
     db = get_db()
     db.execute("UPDATE custom_sections SET active = CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=?", (id,))
@@ -1266,7 +1580,7 @@ def admin_section_toggle(id):
 # --------------- Admin: Settings ---------------
 
 @app.route("/admin/settings", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_settings():
     db = get_db()
     if request.method == "POST":
@@ -1287,8 +1601,9 @@ def admin_settings():
                     ("hero_bg_image", hero_bg),
                 )
         # Handle section visibility toggles (checkboxes send no value when unchecked)
-        visibility_keys = ["show_hero", "show_about", "show_services", "show_formations",
-                          "show_certificates", "show_gallery", "show_testimonials", "show_contact"]
+        visibility_keys = ["show_hero", "show_about", "show_pillars", "show_services",
+                          "show_formations", "show_online", "show_process", "show_certificates",
+                          "show_gallery", "show_testimonials", "show_contact"]
         for vk in visibility_keys:
             value = "1" if request.form.get(f"setting_{vk}") else "0"
             db.execute(
@@ -1342,7 +1657,7 @@ def admin_password():
 # --------------- Admin: Proposals ---------------
 
 @app.route("/admin/proposals")
-@login_required
+@super_required
 def admin_proposals():
     db = get_db()
     proposals = db.execute("SELECT * FROM proposals ORDER BY created_at DESC").fetchall()
@@ -1350,7 +1665,7 @@ def admin_proposals():
 
 
 @app.route("/admin/proposals/<int:id>/status", methods=["POST"])
-@login_required
+@super_required
 def admin_proposal_status(id):
     db = get_db()
     db.execute("UPDATE proposals SET status=?, admin_notes=? WHERE id=?",
@@ -1361,7 +1676,7 @@ def admin_proposal_status(id):
 
 
 @app.route("/admin/proposals/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_proposal_delete(id):
     db = get_db()
     db.execute("DELETE FROM proposals WHERE id = ?", (id,))
@@ -1373,7 +1688,7 @@ def admin_proposal_delete(id):
 # --------------- Admin: FAQs CRUD ---------------
 
 @app.route("/admin/faqs")
-@login_required
+@super_required
 def admin_faqs():
     db = get_db()
     faqs = db.execute("SELECT * FROM faqs ORDER BY sort_order").fetchall()
@@ -1381,7 +1696,7 @@ def admin_faqs():
 
 
 @app.route("/admin/faqs/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_faq_add():
     if request.method == "POST":
         db = get_db()
@@ -1395,7 +1710,7 @@ def admin_faq_add():
 
 
 @app.route("/admin/faqs/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_faq_edit(id):
     db = get_db()
     faq = db.execute("SELECT * FROM faqs WHERE id = ?", (id,)).fetchone()
@@ -1413,7 +1728,7 @@ def admin_faq_edit(id):
 
 
 @app.route("/admin/faqs/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_faq_delete(id):
     db = get_db()
     db.execute("DELETE FROM faqs WHERE id = ?", (id,))
@@ -1425,7 +1740,7 @@ def admin_faq_delete(id):
 # --------------- Admin: Training Sessions CRUD ---------------
 
 @app.route("/admin/sessions")
-@login_required
+@super_required
 def admin_sessions():
     db = get_db()
     sessions = db.execute("SELECT * FROM training_sessions ORDER BY start_date").fetchall()
@@ -1433,7 +1748,7 @@ def admin_sessions():
 
 
 @app.route("/admin/sessions/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_session_add():
     if request.method == "POST":
         db = get_db()
@@ -1449,7 +1764,7 @@ def admin_session_add():
 
 
 @app.route("/admin/sessions/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_session_edit(id):
     db = get_db()
     sess = db.execute("SELECT * FROM training_sessions WHERE id = ?", (id,)).fetchone()
@@ -1470,7 +1785,7 @@ def admin_session_edit(id):
 
 
 @app.route("/admin/sessions/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_session_delete(id):
     db = get_db()
     db.execute("DELETE FROM training_sessions WHERE id = ?", (id,))
@@ -1482,7 +1797,7 @@ def admin_session_delete(id):
 # --------------- Admin: Partners CRUD ---------------
 
 @app.route("/admin/partners")
-@login_required
+@super_required
 def admin_partners():
     db = get_db()
     partners = db.execute("SELECT * FROM partners ORDER BY sort_order").fetchall()
@@ -1490,7 +1805,7 @@ def admin_partners():
 
 
 @app.route("/admin/partners/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_partner_add():
     if request.method == "POST":
         logo_url = save_upload(request.files.get("logo"), "partners")
@@ -1508,7 +1823,7 @@ def admin_partner_add():
 
 
 @app.route("/admin/partners/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_partner_edit(id):
     db = get_db()
     partner = db.execute("SELECT * FROM partners WHERE id = ?", (id,)).fetchone()
@@ -1529,7 +1844,7 @@ def admin_partner_edit(id):
 
 
 @app.route("/admin/partners/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_partner_delete(id):
     db = get_db()
     db.execute("DELETE FROM partners WHERE id = ?", (id,))
@@ -1680,7 +1995,7 @@ def student_courses():
     db = get_db()
     courses = db.execute("SELECT * FROM courses WHERE active = 1 ORDER BY created_at DESC").fetchall()
     enrolled_ids = [r["course_id"] for r in db.execute("SELECT course_id FROM student_enrollments WHERE student_id=?", (g.student["id"],)).fetchall()]
-    return render_template("student/courses.html", courses=courses, enrolled_ids=enrolled_ids)
+    return render_template("student/courses.html", courses=courses, enrolled_ids=enrolled_ids, student=g.student)
 
 
 @app.route("/student/enroll/<int:course_id>", methods=["POST"])
@@ -1708,7 +2023,7 @@ def student_course(course_id):
     for m in modules:
         p = db.execute("SELECT * FROM student_progress WHERE student_id=? AND module_id=?", (g.student["id"], m["id"])).fetchone()
         progress[m["id"]] = p
-    return render_template("student/course.html", course=course, modules=modules, progress=progress, enrollment=enrollment)
+    return render_template("student/course.html", course=course, modules=modules, progress=progress, enrollment=enrollment, student=g.student)
 
 
 @app.route("/student/module/<int:module_id>")
@@ -1718,6 +2033,15 @@ def student_module(module_id):
     module = db.execute("SELECT * FROM course_modules WHERE id = ?", (module_id,)).fetchone()
     if not module:
         return redirect(url_for("student_courses"))
+    # Module content is enrolment-gated: without this check any signed-in student
+    # could read any course's material by guessing module ids.
+    enrolled = db.execute(
+        "SELECT 1 FROM student_enrollments WHERE student_id=? AND course_id=?",
+        (g.student["id"], module["course_id"]),
+    ).fetchone()
+    if not enrolled:
+        flash("Inscrivez-vous à ce cours pour accéder à son contenu.", "warning")
+        return redirect(url_for("student_course", course_id=module["course_id"]))
     course = db.execute("SELECT * FROM courses WHERE id = ?", (module["course_id"],)).fetchone()
     # Mark as watched
     existing = db.execute("SELECT * FROM student_progress WHERE student_id=? AND module_id=?", (g.student["id"], module_id)).fetchone()
@@ -1725,7 +2049,7 @@ def student_module(module_id):
         db.execute("INSERT INTO student_progress (student_id, module_id, watched, completed) VALUES (?,?,1,0)", (g.student["id"], module_id))
         db.commit()
     quizzes = db.execute("SELECT * FROM quizzes WHERE module_id = ? ORDER BY sort_order", (module_id,)).fetchall()
-    return render_template("student/module.html", module=module, course=course, quizzes=quizzes)
+    return render_template("student/module.html", module=module, course=course, quizzes=quizzes, student=g.student)
 
 
 @app.route("/student/module/<int:module_id>/complete", methods=["POST"])
@@ -1795,7 +2119,7 @@ def student_certificates():
 # --------------- Admin: LMS Management ---------------
 
 @app.route("/admin/courses")
-@login_required
+@super_required
 def admin_courses():
     db = get_db()
     courses = db.execute("SELECT * FROM courses ORDER BY created_at DESC").fetchall()
@@ -1803,7 +2127,7 @@ def admin_courses():
 
 
 @app.route("/admin/courses/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_course_add():
     if request.method == "POST":
         image_url = ""
@@ -1822,7 +2146,7 @@ def admin_course_add():
 
 
 @app.route("/admin/courses/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_course_edit(id):
     db = get_db()
     course = db.execute("SELECT * FROM courses WHERE id=?", (id,)).fetchone()
@@ -1845,7 +2169,7 @@ def admin_course_edit(id):
 
 
 @app.route("/admin/courses/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_course_delete(id):
     db = get_db()
     db.execute("DELETE FROM courses WHERE id=?", (id,))
@@ -1855,7 +2179,7 @@ def admin_course_delete(id):
 
 
 @app.route("/admin/courses/<int:course_id>/modules")
-@login_required
+@super_required
 def admin_modules(course_id):
     db = get_db()
     course = db.execute("SELECT * FROM courses WHERE id=?", (course_id,)).fetchone()
@@ -1864,7 +2188,7 @@ def admin_modules(course_id):
 
 
 @app.route("/admin/courses/<int:course_id>/modules/add", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_module_add(course_id):
     if request.method == "POST":
         db = get_db()
@@ -1880,7 +2204,7 @@ def admin_module_add(course_id):
 
 
 @app.route("/admin/modules/<int:id>/edit", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_module_edit(id):
     db = get_db()
     module = db.execute("SELECT * FROM course_modules WHERE id=?", (id,)).fetchone()
@@ -1900,7 +2224,7 @@ def admin_module_edit(id):
 
 
 @app.route("/admin/modules/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_module_delete(id):
     db = get_db()
     module = db.execute("SELECT course_id FROM course_modules WHERE id=?", (id,)).fetchone()
@@ -1912,7 +2236,7 @@ def admin_module_delete(id):
 
 
 @app.route("/admin/modules/<int:module_id>/quizzes", methods=["GET", "POST"])
-@login_required
+@super_required
 def admin_quizzes(module_id):
     db = get_db()
     module = db.execute("SELECT * FROM course_modules WHERE id=?", (module_id,)).fetchone()
@@ -1931,7 +2255,7 @@ def admin_quizzes(module_id):
 
 
 @app.route("/admin/quizzes/<int:id>/delete", methods=["POST"])
-@login_required
+@super_required
 def admin_quiz_delete(id):
     db = get_db()
     quiz = db.execute("SELECT module_id FROM quizzes WHERE id=?", (id,)).fetchone()
@@ -1943,7 +2267,7 @@ def admin_quiz_delete(id):
 
 
 @app.route("/admin/students")
-@login_required
+@super_required
 def admin_students():
     db = get_db()
     students = db.execute("SELECT * FROM students ORDER BY created_at DESC").fetchall()
@@ -1951,7 +2275,7 @@ def admin_students():
 
 
 @app.route("/admin/students/<int:id>/progress")
-@login_required
+@super_required
 def admin_student_progress(id):
     db = get_db()
     student = db.execute("SELECT * FROM students WHERE id=?", (id,)).fetchone()
@@ -1976,16 +2300,583 @@ def admin_student_progress(id):
 
 
 @app.route("/admin/rewards")
-@login_required
+@super_required
 def admin_rewards():
     db = get_db()
     rewards = db.execute("SELECT * FROM rewards ORDER BY id").fetchall()
     return render_template("admin/rewards.html", rewards=rewards)
 
 
+# --------------- Admin: Users & roles (super only) ---------------
+
+@app.route("/admin/users")
+@super_required
+def admin_users():
+    db = get_db()
+    # No created_at here: databases created before this column existed cannot get
+    # it via ALTER (SQLite rejects a CURRENT_TIMESTAMP default on ADD COLUMN).
+    users = db.execute(
+        "SELECT id, username, role, full_name FROM admin_user ORDER BY role, username"
+    ).fetchall()
+    return render_template("admin/users.html", users=users)
+
+
+@app.route("/admin/users/add", methods=["GET", "POST"])
+@super_required
+def admin_user_add():
+    db = get_db()
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "school")
+        if not username or not password:
+            flash("Nom d'utilisateur et mot de passe sont requis.", "error")
+            return render_template("admin/user_form.html", user=None)
+        if db.execute("SELECT id FROM admin_user WHERE username=?", (username,)).fetchone():
+            flash("Ce nom d'utilisateur existe déjà.", "error")
+            return render_template("admin/user_form.html", user=None)
+        db.execute(
+            "INSERT INTO admin_user (username, password_hash, role, full_name) VALUES (?,?,?,?)",
+            (
+                username,
+                generate_password_hash(password),
+                "super" if role == "super" else "school",
+                request.form.get("full_name", "").strip(),
+            ),
+        )
+        db.commit()
+        flash("Compte créé.", "success")
+        return redirect(url_for("admin_users"))
+    return render_template("admin/user_form.html", user=None)
+
+
+@app.route("/admin/users/<int:id>/edit", methods=["GET", "POST"])
+@super_required
+def admin_user_edit(id):
+    db = get_db()
+    user = db.execute(
+        "SELECT id, username, role, full_name FROM admin_user WHERE id=?", (id,)
+    ).fetchone()
+    if not user:
+        abort(404)
+    if request.method == "POST":
+        role = request.form.get("role", "school")
+        role = "super" if role == "super" else "school"
+        # Never let the last super account demote itself out of existence.
+        if user["role"] == "super" and role != "super":
+            supers = db.execute("SELECT COUNT(*) FROM admin_user WHERE role='super'").fetchone()[0]
+            if supers <= 1:
+                flash("Impossible : il doit rester au moins un administrateur du site.", "error")
+                return redirect(url_for("admin_users"))
+        db.execute(
+            "UPDATE admin_user SET full_name=?, role=? WHERE id=?",
+            (request.form.get("full_name", "").strip(), role, id),
+        )
+        new_password = request.form.get("password", "")
+        if new_password:
+            db.execute(
+                "UPDATE admin_user SET password_hash=? WHERE id=?",
+                (generate_password_hash(new_password), id),
+            )
+        db.commit()
+        flash("Compte mis à jour.", "success")
+        return redirect(url_for("admin_users"))
+    return render_template("admin/user_form.html", user=user)
+
+
+@app.route("/admin/users/<int:id>/delete", methods=["POST"])
+@super_required
+def admin_user_delete(id):
+    db = get_db()
+    if int(current_user.id) == id:
+        flash("Vous ne pouvez pas supprimer votre propre compte.", "error")
+        return redirect(url_for("admin_users"))
+    user = db.execute("SELECT role FROM admin_user WHERE id=?", (id,)).fetchone()
+    if user and user["role"] == "super":
+        supers = db.execute("SELECT COUNT(*) FROM admin_user WHERE role='super'").fetchone()[0]
+        if supers <= 1:
+            flash("Impossible : il doit rester au moins un administrateur du site.", "error")
+            return redirect(url_for("admin_users"))
+    db.execute("DELETE FROM admin_user WHERE id=?", (id,))
+    db.commit()
+    flash("Compte supprimé.", "success")
+    return redirect(url_for("admin_users"))
+
+
+# --------------- Admin: School (teachers, classes, pupils, fees) ---------------
+
+MONTHS_FR = [
+    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+]
+
+
+def _teacher_form():
+    return (
+        request.form["first_name"].strip(),
+        request.form["last_name"].strip(),
+        request.form.get("email", "").strip(),
+        request.form.get("phone", "").strip(),
+        request.form.get("specialty", "").strip(),
+        request.form.get("bio", "").strip(),
+    )
+
+
+@app.route("/admin/teachers")
+@login_required
+def admin_teachers():
+    db = get_db()
+    teachers = db.execute(
+        """SELECT t.*,
+                  (SELECT COUNT(*) FROM school_classes c WHERE c.teacher_id = t.id AND c.active = 1) AS class_count,
+                  (SELECT COUNT(*) FROM class_students s
+                     JOIN school_classes c ON s.class_id = c.id
+                    WHERE c.teacher_id = t.id AND s.active = 1) AS student_count
+             FROM teachers t
+            ORDER BY t.last_name, t.first_name"""
+    ).fetchall()
+    return render_template("admin/teachers.html", teachers=teachers)
+
+
+@app.route("/admin/teachers/add", methods=["GET", "POST"])
+@login_required
+def admin_teacher_add():
+    db = get_db()
+    if request.method == "POST":
+        photo = save_upload(request.files.get("photo"), "teachers") or ""
+        db.execute(
+            "INSERT INTO teachers (first_name, last_name, email, phone, specialty, bio, photo)"
+            " VALUES (?,?,?,?,?,?,?)",
+            _teacher_form() + (photo,),
+        )
+        db.commit()
+        flash("Enseignant ajouté.", "success")
+        return redirect(url_for("admin_teachers"))
+    classes = db.execute("SELECT * FROM school_classes ORDER BY name").fetchall()
+    return render_template("admin/teacher_form.html", teacher=None, classes=classes)
+
+
+@app.route("/admin/teachers/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_teacher_edit(id):
+    db = get_db()
+    teacher = db.execute("SELECT * FROM teachers WHERE id=?", (id,)).fetchone()
+    if not teacher:
+        abort(404)
+    if request.method == "POST":
+        photo = save_upload(request.files.get("photo"), "teachers") or teacher["photo"]
+        db.execute(
+            "UPDATE teachers SET first_name=?, last_name=?, email=?, phone=?, specialty=?, bio=?,"
+            " photo=?, active=? WHERE id=?",
+            _teacher_form() + (photo, 1 if request.form.get("active") else 0, id),
+        )
+        db.commit()
+        flash("Enseignant mis à jour.", "success")
+        return redirect(url_for("admin_teachers"))
+    classes = db.execute(
+        "SELECT * FROM school_classes WHERE teacher_id=? ORDER BY name", (id,)
+    ).fetchall()
+    return render_template("admin/teacher_form.html", teacher=teacher, classes=classes)
+
+
+@app.route("/admin/teachers/<int:id>/delete", methods=["POST"])
+@login_required
+def admin_teacher_delete(id):
+    db = get_db()
+    # Keep the classes, just unassign them.
+    db.execute("UPDATE school_classes SET teacher_id = NULL WHERE teacher_id=?", (id,))
+    db.execute("DELETE FROM teachers WHERE id=?", (id,))
+    db.commit()
+    flash("Enseignant supprimé. Ses classes sont désormais sans responsable.", "success")
+    return redirect(url_for("admin_teachers"))
+
+
+@app.route("/admin/classes")
+@login_required
+def admin_classes():
+    db = get_db()
+    classes = db.execute(
+        """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
+                  f.title AS formation_title,
+                  (SELECT COUNT(*) FROM class_students s WHERE s.class_id = c.id AND s.active = 1) AS student_count
+             FROM school_classes c
+             LEFT JOIN teachers t ON c.teacher_id = t.id
+             LEFT JOIN formations f ON c.formation_id = f.id
+            ORDER BY c.active DESC, c.name"""
+    ).fetchall()
+    return render_template("admin/classes.html", classes=classes)
+
+
+def _class_form():
+    def _num(name):
+        raw = request.form.get(name, "").strip()
+        try:
+            return float(raw)
+        except ValueError:
+            return 0.0
+
+    def _fk(name):
+        raw = request.form.get(name, "").strip()
+        return int(raw) if raw.isdigit() else None
+
+    return (
+        request.form["name"].strip(),
+        _fk("formation_id"),
+        _fk("teacher_id"),
+        request.form.get("academic_year", "").strip(),
+        _num("monthly_fee"),
+        request.form.get("room", "").strip(),
+        request.form.get("schedule", "").strip(),
+        request.form.get("start_date", "").strip(),
+        request.form.get("end_date", "").strip(),
+    )
+
+
+@app.route("/admin/classes/add", methods=["GET", "POST"])
+@login_required
+def admin_class_add():
+    db = get_db()
+    if request.method == "POST":
+        db.execute(
+            "INSERT INTO school_classes (name, formation_id, teacher_id, academic_year, monthly_fee,"
+            " room, schedule, start_date, end_date) VALUES (?,?,?,?,?,?,?,?,?)",
+            _class_form(),
+        )
+        db.commit()
+        flash("Classe créée.", "success")
+        return redirect(url_for("admin_classes"))
+    return render_template(
+        "admin/class_form.html",
+        klass=None,
+        teachers=db.execute("SELECT * FROM teachers WHERE active=1 ORDER BY last_name").fetchall(),
+        formations=db.execute("SELECT id, title FROM formations ORDER BY sort_order").fetchall(),
+    )
+
+
+@app.route("/admin/classes/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_class_edit(id):
+    db = get_db()
+    klass = db.execute("SELECT * FROM school_classes WHERE id=?", (id,)).fetchone()
+    if not klass:
+        abort(404)
+    if request.method == "POST":
+        db.execute(
+            "UPDATE school_classes SET name=?, formation_id=?, teacher_id=?, academic_year=?,"
+            " monthly_fee=?, room=?, schedule=?, start_date=?, end_date=?, active=? WHERE id=?",
+            _class_form() + (1 if request.form.get("active") else 0, id),
+        )
+        db.commit()
+        flash("Classe mise à jour.", "success")
+        return redirect(url_for("admin_class_detail", id=id))
+    return render_template(
+        "admin/class_form.html",
+        klass=klass,
+        teachers=db.execute("SELECT * FROM teachers WHERE active=1 ORDER BY last_name").fetchall(),
+        formations=db.execute("SELECT id, title FROM formations ORDER BY sort_order").fetchall(),
+    )
+
+
+@app.route("/admin/classes/<int:id>")
+@login_required
+def admin_class_detail(id):
+    db = get_db()
+    klass = db.execute(
+        """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
+                  t.email AS teacher_email, t.phone AS teacher_phone, t.specialty AS teacher_specialty,
+                  f.title AS formation_title
+             FROM school_classes c
+             LEFT JOIN teachers t ON c.teacher_id = t.id
+             LEFT JOIN formations f ON c.formation_id = f.id
+            WHERE c.id = ?""",
+        (id,),
+    ).fetchone()
+    if not klass:
+        abort(404)
+
+    today = date.today()
+    year = request.args.get("year", type=int) or today.year
+    month = request.args.get("month", type=int) or today.month
+
+    students = db.execute(
+        """SELECT s.*, p.status, p.amount AS paid_amount, p.paid_on, p.method
+             FROM class_students s
+             LEFT JOIN payments p
+               ON p.student_id = s.id AND p.year = ? AND p.month = ?
+            WHERE s.class_id = ? AND s.active = 1
+            ORDER BY s.last_name, s.first_name""",
+        (year, month, id),
+    ).fetchall()
+
+    paid = sum(1 for s in students if s["status"] == "paid")
+    collected = sum((s["paid_amount"] or 0) for s in students if s["status"] == "paid")
+
+    return render_template(
+        "admin/class_detail.html",
+        klass=klass,
+        students=students,
+        year=year,
+        month=month,
+        months=MONTHS_FR,
+        paid_count=paid,
+        unpaid_count=len(students) - paid,
+        collected=collected,
+    )
+
+
+@app.route("/admin/classes/<int:id>/delete", methods=["POST"])
+@login_required
+def admin_class_delete(id):
+    db = get_db()
+    # Detach the pupils rather than deleting people along with the class.
+    db.execute("UPDATE class_students SET class_id = NULL WHERE class_id=?", (id,))
+    db.execute("DELETE FROM school_classes WHERE id=?", (id,))
+    db.commit()
+    flash("Classe supprimée. Les élèves ont été détachés.", "success")
+    return redirect(url_for("admin_classes"))
+
+
+def _pupil_form():
+    def _fk(name):
+        raw = request.form.get(name, "").strip()
+        return int(raw) if raw.isdigit() else None
+
+    def _num(name):
+        raw = request.form.get(name, "").strip()
+        try:
+            return float(raw)
+        except ValueError:
+            return 0.0
+
+    return (
+        request.form["first_name"].strip(),
+        request.form["last_name"].strip(),
+        request.form.get("email", "").strip(),
+        request.form.get("phone", "").strip(),
+        request.form.get("guardian_phone", "").strip(),
+        _fk("class_id"),
+        _num("monthly_fee"),
+        request.form.get("enrolled_on", "").strip(),
+        request.form.get("notes", "").strip(),
+    )
+
+
+@app.route("/admin/eleves")
+@login_required
+def admin_pupils():
+    db = get_db()
+    class_filter = request.args.get("class_id", type=int)
+    sql = """SELECT s.*, c.name AS class_name
+               FROM class_students s
+               LEFT JOIN school_classes c ON s.class_id = c.id"""
+    params = ()
+    if class_filter:
+        sql += " WHERE s.class_id = ?"
+        params = (class_filter,)
+    sql += " ORDER BY s.active DESC, s.last_name, s.first_name"
+    return render_template(
+        "admin/pupils.html",
+        pupils=db.execute(sql, params).fetchall(),
+        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        class_filter=class_filter,
+    )
+
+
+@app.route("/admin/eleves/add", methods=["GET", "POST"])
+@login_required
+def admin_pupil_add():
+    db = get_db()
+    if request.method == "POST":
+        db.execute(
+            "INSERT INTO class_students (first_name, last_name, email, phone, guardian_phone,"
+            " class_id, monthly_fee, enrolled_on, notes) VALUES (?,?,?,?,?,?,?,?,?)",
+            _pupil_form(),
+        )
+        db.commit()
+        flash("Élève ajouté.", "success")
+        return redirect(url_for("admin_pupils"))
+    return render_template(
+        "admin/pupil_form.html",
+        pupil=None,
+        classes=db.execute("SELECT * FROM school_classes WHERE active=1 ORDER BY name").fetchall(),
+        preselect=request.args.get("class_id", type=int),
+    )
+
+
+@app.route("/admin/eleves/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_pupil_edit(id):
+    db = get_db()
+    pupil = db.execute("SELECT * FROM class_students WHERE id=?", (id,)).fetchone()
+    if not pupil:
+        abort(404)
+    if request.method == "POST":
+        db.execute(
+            "UPDATE class_students SET first_name=?, last_name=?, email=?, phone=?, guardian_phone=?,"
+            " class_id=?, monthly_fee=?, enrolled_on=?, notes=?, active=? WHERE id=?",
+            _pupil_form() + (1 if request.form.get("active") else 0, id),
+        )
+        db.commit()
+        flash("Élève mis à jour.", "success")
+        return redirect(url_for("admin_pupils"))
+    payments = db.execute(
+        "SELECT * FROM payments WHERE student_id=? ORDER BY year DESC, month DESC", (id,)
+    ).fetchall()
+    return render_template(
+        "admin/pupil_form.html",
+        pupil=pupil,
+        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        payments=payments,
+        months=MONTHS_FR,
+        preselect=None,
+    )
+
+
+@app.route("/admin/eleves/<int:id>/delete", methods=["POST"])
+@login_required
+def admin_pupil_delete(id):
+    db = get_db()
+    db.execute("DELETE FROM payments WHERE student_id=?", (id,))
+    db.execute("DELETE FROM class_students WHERE id=?", (id,))
+    db.commit()
+    flash("Élève supprimé.", "success")
+    return redirect(url_for("admin_pupils"))
+
+
+@app.route("/admin/paiements")
+@login_required
+def admin_payments():
+    db = get_db()
+    today = date.today()
+    year = request.args.get("year", type=int) or today.year
+    month = request.args.get("month", type=int) or today.month
+    class_filter = request.args.get("class_id", type=int)
+    status_filter = request.args.get("status", "")
+
+    sql = """SELECT s.id, s.first_name, s.last_name, s.phone, s.monthly_fee AS student_fee,
+                    c.id AS class_id, c.name AS class_name, c.monthly_fee AS class_fee,
+                    t.first_name AS teacher_first, t.last_name AS teacher_last,
+                    p.status, p.amount AS paid_amount, p.paid_on, p.method
+               FROM class_students s
+               LEFT JOIN school_classes c ON s.class_id = c.id
+               LEFT JOIN teachers t ON c.teacher_id = t.id
+               LEFT JOIN payments p
+                 ON p.student_id = s.id AND p.year = ? AND p.month = ?
+              WHERE s.active = 1"""
+    params = [year, month]
+    if class_filter:
+        sql += " AND s.class_id = ?"
+        params.append(class_filter)
+    sql += " ORDER BY c.name, s.last_name, s.first_name"
+
+    rows = db.execute(sql, tuple(params)).fetchall()
+
+    # A pupil's own fee overrides the class fee when it is set.
+    pupils = []
+    for r in rows:
+        due = r["student_fee"] or r["class_fee"] or 0
+        paid = r["status"] == "paid"
+        if status_filter == "paid" and not paid:
+            continue
+        if status_filter == "unpaid" and paid:
+            continue
+        pupils.append({"row": r, "due": due, "paid": paid})
+
+    total_due = sum(p["due"] for p in pupils)
+    total_collected = sum((p["row"]["paid_amount"] or 0) for p in pupils if p["paid"])
+    paid_count = sum(1 for p in pupils if p["paid"])
+
+    return render_template(
+        "admin/payments.html",
+        pupils=pupils,
+        year=year,
+        month=month,
+        months=MONTHS_FR,
+        years=list(range(today.year - 3, today.year + 2)),
+        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        class_filter=class_filter,
+        status_filter=status_filter,
+        total_due=total_due,
+        total_collected=total_collected,
+        paid_count=paid_count,
+        unpaid_count=len(pupils) - paid_count,
+    )
+
+
+@app.route("/admin/paiements/mark", methods=["POST"])
+@login_required
+def admin_payment_mark():
+    db = get_db()
+    student_id = request.form.get("student_id", type=int)
+    year = request.form.get("year", type=int)
+    month = request.form.get("month", type=int)
+    action = request.form.get("action", "paid")
+
+    if not (student_id and year and month):
+        abort(400)
+
+    if action == "unpaid":
+        # No row means unpaid, so clearing the row is the whole operation.
+        db.execute(
+            "DELETE FROM payments WHERE student_id=? AND year=? AND month=?",
+            (student_id, year, month),
+        )
+    else:
+        pupil = db.execute(
+            """SELECT s.monthly_fee AS student_fee, s.class_id, c.monthly_fee AS class_fee
+                 FROM class_students s
+                 LEFT JOIN school_classes c ON s.class_id = c.id
+                WHERE s.id = ?""",
+            (student_id,),
+        ).fetchone()
+        if not pupil:
+            abort(404)
+        amount = request.form.get("amount", type=float)
+        if amount is None:
+            amount = pupil["student_fee"] or pupil["class_fee"] or 0
+        db.execute(
+            """INSERT INTO payments (student_id, class_id, year, month, amount, status, method, paid_on)
+               VALUES (?,?,?,?,?,?,?,?)
+               ON CONFLICT (student_id, year, month) DO UPDATE SET
+                 class_id = EXCLUDED.class_id, amount = EXCLUDED.amount,
+                 status = EXCLUDED.status, method = EXCLUDED.method, paid_on = EXCLUDED.paid_on""",
+            (
+                student_id,
+                pupil["class_id"],
+                year,
+                month,
+                amount,
+                "paid",
+                request.form.get("method", "").strip(),
+                request.form.get("paid_on", "").strip() or date.today().isoformat(),
+            ),
+        )
+    db.commit()
+
+    if request.form.get("redirect_to") == "class":
+        return redirect(
+            url_for("admin_class_detail", id=request.form.get("class_id", type=int),
+                    year=year, month=month)
+        )
+    return redirect(
+        url_for("admin_payments", year=year, month=month,
+                class_id=request.form.get("class_id_filter") or None,
+                status=request.form.get("status_filter") or None)
+    )
+
+
 # --------------- Run ---------------
 
-if __name__ == "__main__":
+# Run at import so gunicorn (`app:app`) gets the schema too — previously these
+# only ran under `python app.py`, so new tables never reached production. Both
+# are idempotent.
+with app.app_context():
     init_db()
     migrate_db()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+
+
+if __name__ == "__main__":
+    # Never default the interactive debugger on — it is remote code execution
+    # for anyone who can reach a traceback.
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true", "yes")
+    app.run(debug=debug, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

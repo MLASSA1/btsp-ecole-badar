@@ -86,6 +86,61 @@
         </label>
       </div>
 
+      <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb">
+      <h3 style="font-size:1rem;margin-bottom:4px">Page détaillée de la formation</h3>
+      <p class="help" style="margin-bottom:18px">
+        Ces champs alimentent la page dédiée du parcours. Laissez vide pour utiliser
+        les informations résumées ci-dessus.
+      </p>
+
+      <div class="form-group">
+        <label for="long_description">Présentation complète</label>
+        <textarea id="long_description" name="long_description" rows="4"
+          placeholder="Présentation détaillée du parcours, de sa pédagogie et de ses débouchés...">{{ formation.long_description if formation else '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="program_content">Programme / modules (séparés par |)</label>
+        <textarea id="program_content" name="program_content" rows="3"
+          placeholder="Module 1 : Bases|Module 2 : Techniques|Module 3 : Stage">{{ formation.program_content if formation else '' }}</textarea>
+        <div class="help">Un module par élément, séparés par |. Utilisez « Titre :: description » pour ajouter un détail.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="career_outcomes">Débouchés / métiers visés (séparés par |)</label>
+        <textarea id="career_outcomes" name="career_outcomes" rows="2"
+          placeholder="Chef pâtissier|Chef de partie|Responsable de laboratoire">{{ formation.career_outcomes if formation else '' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="prerequisites">Prérequis</label>
+        <input type="text" id="prerequisites" name="prerequisites"
+          value="{{ formation.prerequisites if formation else '' }}"
+          placeholder="Aucun prérequis — entretien de motivation">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="schedule">Rythme / horaires</label>
+          <input type="text" id="schedule" name="schedule"
+            value="{{ formation.schedule if formation else '' }}"
+            placeholder="Lun - Ven, 09h00 - 13h00">
+        </div>
+        <div class="form-group">
+          <label for="next_start">Prochaine rentrée</label>
+          <input type="text" id="next_start" name="next_start"
+            value="{{ formation.next_start if formation else '' }}"
+            placeholder="Septembre 2026">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="price">Tarif</label>
+        <input type="text" id="price" name="price"
+          value="{{ formation.price if formation else '' }}"
+          placeholder="Ex : 1 200 MAD / mois — facilités de paiement">
+      </div>
+
       <button type="submit" class="btn btn-primary">{{ "Mettre à jour" if formation else "Ajouter la formation" }}</button>
     </form>
   </div>

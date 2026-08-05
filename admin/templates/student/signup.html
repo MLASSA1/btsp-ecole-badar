@@ -6,72 +6,7 @@
   <title>Inscription - BTSP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif; min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #1B2A4A 0%, #0F1D36 40%, #1A1A2E 100%);
-      padding: 24px 0;
-    }
-    .signup-card {
-      background: #fff; border-radius: 16px; padding: 44px 40px;
-      width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .signup-brand { text-align: center; margin-bottom: 32px; }
-    .signup-brand h1 {
-      font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1B2A4A;
-    }
-    .signup-brand em { color: #D4A017; font-style: italic; }
-    .signup-brand p { font-size: 0.85rem; color: #9A9A9A; margin-top: 8px; }
-    .flash {
-      padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;
-      font-size: 0.85rem;
-    }
-    .flash-error { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
-    .flash-success { background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
-    .form-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-    }
-    .form-group { margin-bottom: 18px; }
-    .form-group label {
-      display: block; font-size: 0.85rem; font-weight: 500;
-      margin-bottom: 6px; color: #3D3D3D;
-    }
-    .form-group input {
-      width: 100%; padding: 11px 16px;
-      border: 1.5px solid #E5E7EB; border-radius: 8px;
-      font-family: inherit; font-size: 0.9rem;
-      outline: none; transition: 0.2s;
-    }
-    .form-group input:focus {
-      border-color: #1B2A4A;
-      box-shadow: 0 0 0 3px rgba(27,42,74,0.1);
-    }
-    .btn-signup {
-      width: 100%; padding: 14px;
-      background: #1B2A4A; color: #fff; border: none;
-      border-radius: 8px; font-family: inherit;
-      font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: 0.2s;
-      margin-top: 4px;
-    }
-    .btn-signup:hover { background: #0F1D36; }
-    .links {
-      text-align: center; margin-top: 24px;
-    }
-    .links a {
-      font-size: 0.85rem; color: #9A9A9A;
-      text-decoration: none; transition: 0.2s;
-    }
-    .links a:hover { color: #1B2A4A; }
-    .links .login-link { color: #1B2A4A; font-weight: 600; }
-    .links .login-link:hover { color: #D4A017; }
-    @media (max-width: 520px) {
-      .signup-card { padding: 32px 20px; margin: 16px; }
-      .form-row { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link rel="stylesheet" href="/static-site/app.css">
 </head>
 <body>
   <div class="signup-card">
