@@ -512,15 +512,29 @@ def init_db():
 
     _run_ddl(db, tables)
 
-    # Create default admin
+    # Create the first admin account.
+    #
+    # A hard-coded default password is fine on a laptop and fatal on a public
+    # host: this repository is public, so anyone could read it and sign in to
+    # the live school back-office. Take the credentials from the environment,
+    # and when none are set invent a random password and print it once rather
+    # than falling back to something guessable.
     existing = db.execute("SELECT id FROM admin_user LIMIT 1").fetchone()
     if not existing:
+        admin_name = os.environ.get("BTSP_ADMIN_USER", "admin").strip() or "admin"
+        admin_pass = os.environ.get("BTSP_ADMIN_PASSWORD", "").strip()
+        generated = not admin_pass
+        if generated:
+            admin_pass = secrets.token_urlsafe(12)
         db.execute(
             "INSERT INTO admin_user (username, password_hash) VALUES (?, ?)",
-            ("admin", generate_password_hash("admin123")),
+            (admin_name, generate_password_hash(admin_pass)),
         )
-        print(">>> Default admin created: admin / admin123")
-        print(">>> CHANGE THIS PASSWORD IMMEDIATELY after first login!")
+        if generated:
+            print(f">>> First admin created: {admin_name} / {admin_pass}")
+            print(">>> This password is shown once. Save it, then change it after login.")
+        else:
+            print(f">>> First admin created: {admin_name} (password taken from BTSP_ADMIN_PASSWORD)")
 
     # Seed site settings
     defaults = {
