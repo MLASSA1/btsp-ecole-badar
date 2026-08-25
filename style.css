@@ -86,6 +86,14 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--nav-h) + 20px);
   -webkit-text-size-adjust: 100%;
+  /* The mobile drawer waits off-canvas at translateX(100%). A fixed element is
+     not clipped by the body, so it stretched the viewport's scrollable area to
+     roughly twice the screen width: the page slid sideways, and every fixed
+     element — the WhatsApp button included — resolved `right` against that
+     phantom width and landed off-screen. Clip on the root instead of hiding on
+     the body: `clip` creates no scroll container, so the overflow never exists
+     and sticky positioning still works. */
+  overflow-x: clip;
 }
 
 body {
@@ -95,7 +103,7 @@ body {
   line-height: 1.65;
   font-size: 16.5px;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img { max-width: 100%; display: block; }
@@ -1458,6 +1466,23 @@ h1 em, h2 em, h3 em {
 }
 
 @media (max-width: 680px) {
+  /* Anything tapped with a thumb needs roughly 44px of height. On a phone the
+     language switcher was 30px, the phone number 21px and the footer links
+     19px, so neighbouring links sat inside one fingertip. Grow the hit area
+     with padding rather than font size, which would reflow the layout. */
+  .lang-switcher a { min-height: 42px; display: inline-flex; align-items: center; padding: 0 13px; }
+  .topbar-contact a { min-height: 42px; }
+  .footer-links a { display: inline-block; padding: 11px 0; }
+  .footer-links li { margin-bottom: 0; }
+  .footer-contact a { display: inline-block; padding: 6px 0; }
+  .link-arrow { padding: 8px 0; }
+  .crumbs a { display: inline-block; padding: 9px 0; }
+  .spec-call a { display: inline-block; padding: 11px 0; }
+  .footer-bottom-links a { display: inline-block; padding: 9px 0; }
+  /* The category filter is the most-tapped control on the page; 28px of height
+     is not enough for a thumb. */
+  .formation-tabs .tab { padding: 14px 20px; }
+
   .section { padding: 76px 0; }
   .container, .nav-container, .topbar-inner, .hero-grid, .hero-stats { padding-left: 20px; padding-right: 20px; }
   .section-header { margin-bottom: 44px; }
@@ -1547,6 +1572,12 @@ h1 em, h2 em, h3 em {
 @media (max-width: 900px) {
   [dir="rtl"] .nav-links { right: auto; left: 0; transform: translateX(-100%); box-shadow: 24px 0 60px rgba(20, 22, 31, 0.18); }
   [dir="rtl"] .nav-links.active { transform: translateX(0); }
+}
+
+@media (max-width: 680px) {
+  /* The desktop RTL rule hangs this card off the edge on purpose; on a phone
+     that edge is the screen, so pull it back inside like the LTR version. */
+  [dir="rtl"] .about-float-card { right: 14px; left: auto; }
 }
 
 /* Real diploma specimen — replaces the CSS mock-up when the school uploads one. */
