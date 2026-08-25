@@ -73,6 +73,7 @@ body {
   background: var(--mist);
   color: var(--ink-soft);
   min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
@@ -104,6 +105,9 @@ h1, h2, h3, h4 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; color: 
   left: 0;
   width: var(--sidebar-w);
   height: 100vh;
+  /* iOS reports 100vh taller than the visible area while the toolbar is
+     shown, which hid the sidebar footer behind it. */
+  height: 100dvh;
   background: var(--blue-900);
   color: var(--white);
   display: flex;
@@ -175,7 +179,7 @@ h1, h2, h3, h4 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; color: 
 
 /* ---------- Admin shell ---------- */
 
-.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+.main { margin-left: var(--sidebar-w); min-height: 100vh; min-height: 100dvh; }
 
 .topbar {
   display: flex;
@@ -692,3 +696,17 @@ body:has(.signup-card) {
 
 /* Payment row actions: receipt link sits beside the toggle */
 td form.flex { flex-wrap: wrap; }
+
+/* ---------- Notched phones ---------- */
+.topbar, .content { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+.sidebar { padding-bottom: env(safe-area-inset-bottom); }
+@media (min-width: 861px) {
+  .topbar { padding-left: max(34px, env(safe-area-inset-left)); padding-right: max(34px, env(safe-area-inset-right)); }
+  .content { padding-left: max(34px, env(safe-area-inset-left)); padding-right: max(34px, env(safe-area-inset-right)); }
+}
+
+@media (max-width: 900px) {
+  /* Safari zooms the page on any field under 16px and never zooms back. */
+  input, select, textarea,
+  .form-group input, .form-group select, .form-group textarea { font-size: 16px; }
+}

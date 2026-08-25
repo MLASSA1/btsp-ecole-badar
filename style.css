@@ -1465,6 +1465,16 @@ h1 em, h2 em, h3 em {
   .pdp-skills { columns: 1; }
 }
 
+/* ---------- iOS / notched phones ---------- */
+
+@media (max-width: 900px) {
+  /* Safari zooms the entire page when a focused field is under 16px, and it
+     does not zoom back out. Every control here was 15.68px, so tapping the
+     registration form threw the layout off on every iPhone. */
+  input, select, textarea,
+  .form-group input, .form-group select, .form-group textarea { font-size: 16px; }
+}
+
 @media (max-width: 680px) {
   /* Anything tapped with a thumb needs roughly 44px of height. On a phone the
      language switcher was 30px, the phone number 21px and the footer links
@@ -1598,4 +1608,37 @@ h1 em, h2 em, h3 em {
 [dir="rtl"] .cert-specimen img { transform: rotate(1.2deg); }
 @media (max-width: 768px) {
   .cert-specimen img { transform: none; }
+}
+
+/* ---------- Notched phones (iPhone X and later) ---------- */
+/* With viewport-fit=cover the page draws under the notch and the home
+   indicator. Raise each gutter to the inset only where the inset is larger;
+   env() is 0 on every device without one, so other screens are untouched. */
+.container, .nav-container, .topbar-inner, .hero-grid, .hero-stats {
+  padding-left: max(30px, env(safe-area-inset-left));
+  padding-right: max(30px, env(safe-area-inset-right));
+}
+
+@media (max-width: 680px) {
+  .container, .nav-container, .topbar-inner, .hero-grid, .hero-stats {
+    padding-left: max(22px, env(safe-area-inset-left));
+    padding-right: max(22px, env(safe-area-inset-right));
+  }
+}
+
+/* Keep the floating button clear of the home indicator. */
+.whatsapp-float { bottom: max(26px, calc(14px + env(safe-area-inset-bottom))); }
+@media (max-width: 680px) {
+  .whatsapp-float { bottom: max(16px, calc(10px + env(safe-area-inset-bottom))); }
+}
+
+@media (max-width: 900px) {
+  .nav-links {
+    padding-bottom: max(32px, calc(24px + env(safe-area-inset-bottom)));
+    padding-right: max(24px, env(safe-area-inset-right));
+  }
+}
+[dir="rtl"] .whatsapp-float { right: auto; left: 26px; }
+@media (max-width: 680px) {
+  [dir="rtl"] .whatsapp-float { left: max(16px, env(safe-area-inset-left)); right: auto; }
 }
