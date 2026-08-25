@@ -173,6 +173,9 @@
     btn.addEventListener('click', () => {
       const open = item.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(open));
+      // Drive the height from the real content instead of the CSS cap, so a long
+      // answer written in the admin is never silently clipped.
+      if (answer) answer.style.maxHeight = open ? answer.scrollHeight + 'px' : '';
     });
   });
 

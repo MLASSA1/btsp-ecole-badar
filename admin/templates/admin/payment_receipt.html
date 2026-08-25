@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reçu {{ number }} — {{ settings.get('site_name', 'BTSP') }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static-site/app.css">
+  <style>
+    body { background: var(--canvas); padding: 32px 20px; }
+    .sheet {
+      max-width: 800px; margin: 0 auto; background: #fff;
+      border-radius: 24px; padding: 48px 52px;
+      box-shadow: 0 16px 40px rgba(20,22,31,0.09);
+    }
+    .r-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px;
+              padding-bottom: 28px; border-bottom: 2px solid var(--border); }
+    .r-brand strong { display: block; font-family: 'Outfit', sans-serif; font-size: 1.6rem;
+                      font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
+    .r-brand span { display: block; font-size: 0.86rem; color: var(--ink-muted); margin-top: 2px; }
+    .r-brand address { font-style: normal; font-size: 0.84rem; color: var(--ink-muted); margin-top: 12px; line-height: 1.7; }
+    .r-title { text-align: right; flex-shrink: 0; }
+    .r-title h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .r-num { display: inline-block; padding: 7px 16px; border-radius: 999px;
+             background: var(--blue-100); color: var(--blue-700); font-weight: 700; font-size: 0.86rem; }
+    .r-date { font-size: 0.84rem; color: var(--ink-muted); margin-top: 10px; }
+
+    .r-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 30px 0; }
+    .r-parties h3 { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em;
+                    color: var(--ink-muted); margin-bottom: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; }
+    .r-parties p { font-size: 0.95rem; color: var(--ink); line-height: 1.8; }
+    .r-parties .muted { color: var(--ink-muted); font-size: 0.88rem; }
+
+    table.r-lines { width: 100%; border-collapse: collapse; margin: 8px 0 0; }
+    table.r-lines th { background: var(--surface-2); text-align: left; padding: 14px 18px;
+                       font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); }
+    table.r-lines th:last-child, table.r-lines td:last-child { text-align: right; }
+    table.r-lines td { padding: 18px; border-bottom: 1px solid var(--border); font-size: 0.98rem; color: var(--ink); }
+
+    .r-total { display: flex; justify-content: flex-end; margin-top: 24px; }
+    .r-total-box { min-width: 300px; }
+    .r-total-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 0.95rem; }
+    .r-total-row.grand { border-top: 2px solid var(--border); margin-top: 8px; padding-top: 16px;
+                         font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--ink); }
+    .r-paid { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 999px;
+              background: var(--success-light); color: var(--success); font-weight: 700; font-size: 0.86rem; }
+
+    .r-foot { display: flex; justify-content: space-between; gap: 40px; margin-top: 54px;
+              padding-top: 28px; border-top: 1px solid var(--border); }
+    .r-sig { text-align: center; min-width: 200px; }
+    .r-sig .line { height: 1px; background: var(--border); margin-bottom: 8px; }
+    .r-sig span { font-size: 0.8rem; color: var(--ink-muted); }
+    .r-note { font-size: 0.8rem; color: var(--ink-muted); max-width: 320px; }
+
+    .r-actions { max-width: 800px; margin: 0 auto 22px; display: flex; gap: 10px; justify-content: flex-end; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .r-actions { display: none; }
+      .sheet { box-shadow: none; border-radius: 0; max-width: none; padding: 0; }
+      @page { margin: 18mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="r-actions">
+    <a href="{{ url_for('admin_payments', year=year, month=month) }}" class="btn btn-sm">Retour</a>
+    <button onclick="window.print()" class="btn btn-sm btn-primary">Imprimer / PDF</button>
+  </div>
+
+  <div class="sheet">
+    <div class="r-head">
+      <div class="r-brand">
+        <strong>{{ settings.get('site_name', 'BTSP') }}</strong>
+        <span>{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</span>
+        <address>
+          {{ settings.get('address', '') }}<br>
+          {{ settings.get('phone', '') }}{% if settings.get('phone_2') %} / {{ settings.get('phone_2') }}{% endif %}<br>
+          {{ settings.get('email', '') }}
+        </address>
+      </div>
+      <div class="r-title">
+        <h1>Reçu de paiement</h1>
+        <span class="r-num">{{ number }}</span>
+        <div class="r-date">Émis le {{ issued_on }}</div>
+      </div>
+    </div>
+
+    <div class="r-parties">
+      <div>
+        <h3>Élève</h3>
+        <p>
+          <strong>{{ p.first_name }} {{ p.last_name }}</strong><br>
+          <span class="muted">
+            {% if p.class_name %}Classe : {{ p.class_name }}<br>{% endif %}
+            {% if p.teacher_first %}Enseignant : {{ p.teacher_first }} {{ p.teacher_last }}<br>{% endif %}
+            {% if p.phone %}Tél. : {{ p.phone }}<br>{% endif %}
+            {% if p.guardian_phone %}Tuteur : {{ p.guardian_phone }}{% endif %}
+          </span>
+        </p>
+      </div>
+      <div>
+        <h3>Période réglée</h3>
+        <p>
+          <strong>{{ month_label }} {{ year }}</strong><br>
+          <span class="muted">
+            {% if p.paid_on %}Payé le {{ p.paid_on }}<br>{% endif %}
+            {% if p.method %}Moyen : {{ p.method }}{% else %}Moyen : espèces{% endif %}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <table class="r-lines">
+      <thead>
+        <tr><th>Désignation</th><th>Période</th><th>Montant</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Frais de scolarité{% if p.class_name %} — {{ p.class_name }}{% endif %}</td>
+          <td>{{ month_label }} {{ year }}</td>
+          <td>{{ '%.2f'|format(p.amount or 0) }} MAD</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="r-total">
+      <div class="r-total-box">
+        <div class="r-total-row"><span>Sous-total</span><span>{{ '%.2f'|format(p.amount or 0) }} MAD</span></div>
+        <div class="r-total-row"><span>Reste à payer</span><span>0.00 MAD</span></div>
+        <div class="r-total-row grand"><span>Total réglé</span><span>{{ '%.2f'|format(p.amount or 0) }} MAD</span></div>
+        <div style="margin-top:14px;text-align:right">
+          <span class="r-paid">✓ Payé</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="r-foot">
+      <p class="r-note">
+        Ce reçu atteste du règlement des frais de scolarité pour la période indiquée.
+        À conserver comme justificatif de paiement.
+      </p>
+      <div class="r-sig">
+        <div class="line"></div>
+        <span>Cachet et signature</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

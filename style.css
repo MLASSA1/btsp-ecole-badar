@@ -1548,3 +1548,23 @@ h1 em, h2 em, h3 em {
   [dir="rtl"] .nav-links { right: auto; left: 0; transform: translateX(-100%); box-shadow: 24px 0 60px rgba(20, 22, 31, 0.18); }
   [dir="rtl"] .nav-links.active { transform: translateX(0); }
 }
+
+/* Real diploma specimen — replaces the CSS mock-up when the school uploads one. */
+.cert-specimen { position: relative; }
+.cert-specimen img {
+  width: 100%; height: auto; display: block;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-lg);
+  transform: rotate(-1.2deg);
+  transition: transform var(--transition);
+}
+.cert-specimen img:hover { transform: rotate(0deg) scale(1.015); }
+.cert-specimen figcaption {
+  margin-top: 20px; text-align: center;
+  font-size: 0.86rem; color: var(--ink-muted);
+}
+[dir="rtl"] .cert-specimen img { transform: rotate(1.2deg); }
+@media (max-width: 768px) {
+  .cert-specimen img { transform: none; }
+}

@@ -3,7 +3,9 @@ __pycache__/
 database.db
 database.db-shm
 database.db-wal
-uploads/
+uploads/*
+# The diploma specimen ships with the site, unlike admin-uploaded media.
+!uploads/diplome-specimen-btsp.jpg
 .env
 .secret_key
 *.pem

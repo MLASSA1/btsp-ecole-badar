@@ -30,7 +30,7 @@
           <td>{{ i.telephone }}</td>
           <td class="text-sm">{{ i.formation }}</td>
           <td class="text-sm text-muted">{{ i.message[:40] if i.message else '-' }}{% if i.message and i.message|length > 40 %}...{% endif %}</td>
-          <td class="text-sm text-muted">{{ i.created_at[:16] }}</td>
+          <td class="text-sm text-muted">{{ (i.created_at|string)[:16] if i.created_at else '—' }}</td>
           <td>
             <form method="POST" action="{{ url_for('admin_inscription_status', id=i.id) }}" style="display:inline">
               <select name="status" onchange="this.form.submit()" style="padding:4px 8px;border-radius:6px;border:1px solid #E5E7EB;font-size:0.8rem;font-family:inherit;cursor:pointer;

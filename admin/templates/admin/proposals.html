@@ -23,14 +23,14 @@
       <tbody>
         {% for p in proposals %}
         <tr>
-          <td><strong>{{ p.entreprise }}</strong></td>
-          <td>{{ p.contact }}</td>
+          <td><strong>{{ p.company_name }}</strong></td>
+          <td>{{ p.contact_name }}</td>
           <td>{{ p.email }}</td>
-          <td>{{ p.telephone }}</td>
-          <td class="text-sm">{{ p.formation }}</td>
-          <td>{{ p.participants }}</td>
-          <td>{{ p.budget }}</td>
-          <td class="text-sm text-muted">{{ p.created_at[:16] }}</td>
+          <td>{{ p.phone }}</td>
+          <td class="text-sm">{{ p.training_type }}</td>
+          <td>{{ p.num_participants }}</td>
+          <td>{{ p.budget or '—' }}</td>
+          <td class="text-sm text-muted">{{ (p.created_at|string)[:16] if p.created_at else '—' }}</td>
           <td>
             <form method="POST" action="{{ url_for('admin_proposal_status', id=p.id) }}" style="display:inline">
               <select name="status" onchange="this.form.submit()" style="padding:4px 8px;border-radius:6px;border:1px solid #E5E7EB;font-size:0.8rem;font-family:inherit;cursor:pointer;

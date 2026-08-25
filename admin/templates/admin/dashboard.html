@@ -57,7 +57,7 @@
           <td><strong>{{ r.prenom }} {{ r.nom }}</strong></td>
           <td>{{ r.email }}</td>
           <td>{{ r.formation }}</td>
-          <td class="text-muted text-sm">{{ r.created_at[:16] }}</td>
+          <td class="text-muted text-sm">{{ (r.created_at|string)[:16] if r.created_at else '—' }}</td>
           <td>
             {% if r.status == 'nouveau' %}
               <span class="badge badge-info">Nouveau</span>

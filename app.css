@@ -666,3 +666,6 @@ body:has(.signup-card) {
   .topbar { flex-wrap: wrap; height: auto; padding: 16px 20px; gap: 12px; }
   .nav-user span.nav-user-name { display: none; }
 }
+
+/* Payment row actions: receipt link sits beside the toggle */
+td form.flex { flex-wrap: wrap; }

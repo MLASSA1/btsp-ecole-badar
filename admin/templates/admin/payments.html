@@ -119,6 +119,8 @@
               <input type="hidden" name="status_filter" value="{{ status_filter or '' }}">
               {% if p.paid %}
                 <input type="hidden" name="action" value="unpaid">
+                <a href="{{ url_for('admin_payment_receipt', student_id=s.id, year=year, month=month) }}"
+                   class="btn btn-sm btn-primary" target="_blank" rel="noopener">Reçu</a>
                 <button type="submit" class="btn btn-sm">Annuler</button>
               {% else %}
                 <input type="hidden" name="action" value="paid">

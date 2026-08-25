@@ -448,6 +448,15 @@
           </div>
         </div>
         <div class="cert-visual">
+          {% if settings.get('cert_specimen_image') %}
+          {# A photograph of the diploma the school actually issues carries far more
+             weight than a CSS mock-up. Personal fields are blanked on the file. #}
+          <figure class="cert-specimen">
+            <img src="{{ settings.get('cert_specimen_image') }}"
+                 alt="{{ t.cert_specimen_alt }}" loading="lazy">
+            <figcaption>{{ t.cert_specimen_caption }}</figcaption>
+          </figure>
+          {% else %}
           <div class="cert-mockup">
             <div class="cert-mockup-inner">
               <div class="cert-ornament-top"></div>
@@ -464,6 +473,7 @@
               <div class="cert-ornament-bottom"></div>
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -995,6 +1005,9 @@
             if (p < 1) requestAnimationFrame(step);
             else el.textContent = template;                 // land on the exact value
           })(started);
+          // If rAF is throttled (backgrounded tab, reduced power mode) the count
+          // can stall on a number that is simply wrong. Snap it back to the truth.
+          setTimeout(() => { el.textContent = template; }, DURATION + 600);
         });
       }, { threshold: 0.6 });
       document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));

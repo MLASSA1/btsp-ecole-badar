@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import secrets
 import uuid
 from datetime import date
@@ -786,6 +787,14 @@ def save_upload(file, subfolder):
     return None
 
 
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
+
+
+def valid_email(value):
+    """Loose sanity check. A lead the school cannot reply to is worse than none."""
+    return bool(EMAIL_RE.match((value or "").strip()))
+
+
 def form_int(name, default=0, minimum=None, maximum=None):
     """Read an integer from the form without crashing on junk.
 
@@ -1017,6 +1026,8 @@ def submit_inscription():
     for field in required:
         if not data.get(field, "").strip():
             return jsonify({"error": f"Le champ {field} est requis."}), 400
+    if not valid_email(data.get("email", "")):
+        return jsonify({"error": "Veuillez saisir une adresse email valide."}), 400
 
     db = get_db()
     db.execute(
@@ -1050,6 +1061,8 @@ def submit_proposal():
     for field in required:
         if not data.get(field, "").strip():
             return jsonify({"error": f"Le champ {field} est requis."}), 400
+    if not valid_email(data.get("email", "")):
+        return jsonify({"error": "Veuillez saisir une adresse email valide."}), 400
     db = get_db()
     db.execute(
         """INSERT INTO proposals
@@ -2015,6 +2028,9 @@ def student_signup():
         if not all([email, password, first_name, last_name]):
             flash("Tous les champs sont requis.", "error")
             return render_template("student/signup.html")
+        if not valid_email(email):
+            flash("Veuillez saisir une adresse email valide.", "error")
+            return render_template("student/signup.html")
         if len(password) < 6:
             flash("Le mot de passe doit contenir au moins 6 caractères.", "error")
             return render_template("student/signup.html")
@@ -2906,6 +2922,46 @@ def admin_payments():
     )
 
 
+@app.route("/admin/paiements/<int:student_id>/<int:year>/<int:month>/recu")
+@login_required
+def admin_payment_receipt(student_id, year, month):
+    """Printable receipt for one paid month.
+
+    School staff need something to hand the family; the payments board only
+    recorded that money arrived.
+    """
+    if month < 1 or month > 12:
+        abort(404)
+    db = get_db()
+    row = db.execute(
+        """SELECT p.*, s.first_name, s.last_name, s.phone, s.guardian_phone,
+                  c.name AS class_name, c.monthly_fee AS class_fee,
+                  t.first_name AS teacher_first, t.last_name AS teacher_last
+             FROM payments p
+             JOIN class_students s ON p.student_id = s.id
+             LEFT JOIN school_classes c ON s.class_id = c.id
+             LEFT JOIN teachers t ON c.teacher_id = t.id
+            WHERE p.student_id = ? AND p.year = ? AND p.month = ?""",
+        (student_id, year, month),
+    ).fetchone()
+    if not row:
+        flash("Aucun paiement enregistré pour ce mois — le reçu n'existe pas.", "error")
+        return redirect(url_for("admin_payments", year=year, month=month))
+
+    # Stable, human-readable number: BTSP-YYYY-MM-000ID
+    number = f"BTSP-{year}-{month:02d}-{row['id']:04d}"
+    return render_template(
+        "admin/payment_receipt.html",
+        p=row,
+        number=number,
+        month_label=MONTHS_FR[month - 1],
+        year=year,
+        month=month,
+        settings=get_settings(),
+        issued_on=date.today().isoformat(),
+    )
+
+
 @app.route("/admin/paiements/mark", methods=["POST"])
 @login_required
 def admin_payment_mark():
@@ -2916,6 +2972,10 @@ def admin_payment_mark():
     action = request.form.get("action", "paid")
 
     if not (student_id and year and month):
+        abort(400)
+    # Without this the board happily stores month=99 or year=99999 rows that no
+    # screen can ever show again, and they still count toward the revenue totals.
+    if not (1 <= month <= 12) or not (2000 <= year <= 2100):
         abort(400)
 
     if action == "unpaid":
@@ -2937,6 +2997,10 @@ def admin_payment_mark():
         amount = request.form.get("amount", type=float)
         if amount is None:
             amount = pupil["student_fee"] or pupil["class_fee"] or 0
+        # A typo in the amount box must not turn into negative or nonsense revenue.
+        if amount != amount or amount in (float("inf"), float("-inf")):
+            amount = 0.0
+        amount = min(max(float(amount), 0.0), 1_000_000.0)
         db.execute(
             """INSERT INTO payments (student_id, class_id, year, month, amount, status, method, paid_on)
                VALUES (?,?,?,?,?,?,?,?)

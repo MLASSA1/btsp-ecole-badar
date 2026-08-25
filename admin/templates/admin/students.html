@@ -27,7 +27,7 @@
           <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
           <td class="text-sm">{{ s.email }}</td>
           <td class="text-sm">{{ s.phone or '—' }}</td>
-          <td class="text-sm text-muted">{{ s.created_at[:16] if s.created_at else '—' }}</td>
+          <td class="text-sm text-muted">{{ (s.created_at|string)[:16] if s.created_at else '—' }}</td>
           <td>
             <a href="{{ url_for('admin_student_progress', id=s.id) }}" class="btn btn-sm">Voir progrès</a>
           </td>
