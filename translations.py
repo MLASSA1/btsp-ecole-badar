@@ -152,6 +152,9 @@ TRANSLATIONS = {
         "proposal_timeline": "Période souhaitée",
         "proposal_submit": "Demander une Proposition",
         "proposal_success": "Votre demande de proposition a été envoyée !",
+        "formations_count_one": "formation",
+        "formations_count_plural": "formations",
+        "formations_empty": "Aucune formation dans cette catégorie pour le moment.",
         # --- Catégories de formations ---
         "tab_health": "Santé & Social",
         "tab_business": "Gestion & Numérique",
@@ -422,6 +425,9 @@ TRANSLATIONS = {
         "proposal_timeline": "Desired Period",
         "proposal_submit": "Request a Proposal",
         "proposal_success": "Your proposal request has been sent!",
+        "formations_count_one": "program",
+        "formations_count_plural": "programs",
+        "formations_empty": "No programs in this category yet.",
         # --- Programme categories ---
         "tab_health": "Health & Care",
         "tab_business": "Business & Digital",
@@ -692,6 +698,9 @@ TRANSLATIONS = {
         "proposal_timeline": "الفترة المرغوبة",
         "proposal_submit": "طلب عرض",
         "proposal_success": "تم إرسال طلب العرض الخاص بك!",
+        "formations_count_one": "تكوين",
+        "formations_count_plural": "تكوينات",
+        "formations_empty": "لا توجد تكوينات في هذه الفئة حالياً.",
         # --- أصناف التكوينات ---
         "tab_health": "الصحة والاجتماع",
         "tab_business": "التدبير والرقمنة",

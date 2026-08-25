@@ -5,65 +5,71 @@
    ============================================================ */
 
 :root {
-  --blue-900: #061C42;
-  --blue-800: #0A2A63;
-  --blue-700: #0F3A88;
-  --blue-600: #14479F;
-  --blue-500: #2E63C4;
+  --blue-900: #0A1547;
+  --blue-800: #101F63;
+  --blue-700: #16299B;
+  --blue-600: #1E3FD0;
+  --blue-500: #3D63F0;
+  --blue-100: #E7EDFF;
 
-  --red-600: #A00F23;
-  --red-500: #C8102E;
-  --red-400: #E12A40;
-  --red-300: #FF6070;
-  --red-100: #FCE1E5;
+  --red-600: #C51D35;
+  --red-500: #E23744;
+  --red-400: #F2596B;
+  --red-300: #FF7A85;
+  --red-100: #FFE9EB;
 
-  --mist: #F4F7FC;
-  --mist-dark: #E6EDF8;
+  --amber-500: #F2A93B;
+
+  --canvas: #FBFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #F4F1EB;
+  --surface-3: #EDE8E0;
+  --mist: var(--surface-2);
+  --mist-dark: var(--surface-3);
   --white: #FFFFFF;
 
-  --ink: #14203C;
-  --ink-soft: #45536F;
-  --ink-muted: #7A86A0;
+  --ink: #14161F;
+  --ink-soft: #4C5162;
+  --ink-muted: #8A8FA1;
 
-  --success: #15803D;
-  --success-light: #DCFCE7;
-  --warning: #B45309;
-  --warning-light: #FEF3C7;
-  --danger: #B91C1C;
-  --danger-light: #FEE2E2;
+  --success: #157F4B;
+  --success-light: #E3F5EC;
+  --warning: #A96A0B;
+  --warning-light: #FDF0DA;
+  --danger: #C41F35;
+  --danger-light: #FDE8EB;
   --info: var(--blue-600);
-  --info-light: #DBEAFE;
+  --info-light: var(--blue-100);
 
-  /* Legacy aliases — the per-page stylesheets in the student area still
-     reference these names, so they inherit the new palette for free. */
-  --primary: var(--blue-800);
+  /* Legacy aliases the per-page student stylesheets still reference */
+  --primary: var(--blue-600);
   --primary-dark: var(--blue-900);
   --primary-light: var(--blue-500);
   --gold: var(--red-500);
   --gold-light: var(--red-400);
   --accent: var(--red-500);
-  --cream: var(--mist);
+  --cream: var(--surface-2);
   --dark: var(--blue-900);
   --text: var(--ink-soft);
   --text-light: var(--ink-soft);
   --text-muted: var(--ink-muted);
-  --border: #D5DEEC;
-  --bg: var(--mist);
+  --border: #E7E1D8;
+  --bg: var(--canvas);
 
-  --radius: 3px;
-  --radius-sm: 2px;
-  --shadow: 0 1px 2px rgba(10, 42, 99, 0.05);
-  --shadow-md: 0 8px 28px rgba(10, 42, 99, 0.08);
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 2px 6px rgba(20, 22, 31, 0.05);
+  --shadow-md: 0 16px 40px rgba(20, 22, 31, 0.09);
 
-  --sidebar-w: 264px;
-  --ease: cubic-bezier(0.3, 0, 0.2, 1);
-  --transition: 0.24s var(--ease);
+  --sidebar-w: 268px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: 0.28s var(--ease);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--mist);
   color: var(--ink-soft);
   min-height: 100vh;
@@ -77,7 +83,7 @@ ul { list-style: none; }
 button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 input, select, textarea { font: inherit; }
 
-h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; font-weight: 600; }
+h1, h2, h3, h4 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; color: var(--ink); line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
 
 :focus-visible { outline: 2px solid var(--red-500); outline-offset: 2px; }
 
@@ -198,11 +204,12 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; font-weight: 600; }
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  border-radius: 999px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   background: var(--white);
   color: var(--ink);
   border: 1px solid var(--border);
@@ -212,11 +219,11 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; font-weight: 600; }
 .btn:hover { border-color: var(--blue-800); color: var(--blue-900); }
 .btn:active { transform: translateY(1px); }
 
-.btn-primary { background: var(--blue-800); border-color: var(--blue-800); color: var(--white); }
+.btn-primary { background: linear-gradient(115deg, var(--blue-600), var(--blue-700)); border-color: transparent; color: var(--white); box-shadow: 0 10px 26px rgba(30,63,208,0.24); }
 .btn-primary:hover { background: var(--blue-600); border-color: var(--blue-600); color: var(--white); }
 
 .btn-accent,
-.btn-gold { background: var(--red-500); border-color: var(--red-500); color: var(--white); }
+.btn-gold { background: linear-gradient(115deg, var(--red-500), var(--red-600)); border-color: transparent; color: var(--white); box-shadow: 0 10px 26px rgba(226,55,68,0.26); }
 .btn-accent:hover,
 .btn-gold:hover { background: var(--red-600); border-color: var(--red-600); color: var(--white); }
 
@@ -240,8 +247,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; font-weight: 600; }
 
 .card {
   background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid #EFEAE2;
+  border-radius: 20px;
   margin-bottom: 24px;
 }
 
@@ -297,13 +304,14 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.2; font-weight: 600; }
 }
 
 .stat-card .stat-icon {
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--blue-900);
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
   color: var(--white);
 }
 
@@ -366,12 +374,12 @@ tr:hover td { background: var(--mist); }
 
 .badge {
   display: inline-block;
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.66rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   background: var(--mist-dark);
   color: var(--ink-soft);
   white-space: nowrap;
@@ -560,8 +568,9 @@ body:has(.signup-card) {
   width: 100%;
   max-width: 440px;
   background: var(--white);
-  border-top: 4px solid var(--red-500);
-  border-radius: var(--radius);
+  border-top: 5px solid transparent;
+  border-image: linear-gradient(90deg, var(--blue-600), var(--red-500)) 1;
+  border-radius: 26px;
   padding: 44px 40px;
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3);
 }

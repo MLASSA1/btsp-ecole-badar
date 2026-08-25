@@ -83,27 +83,40 @@
     btn_apply: {{ t.btn_apply|tojson }}
   };
 
-  // Header state on scroll
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Header state on scroll ----
   const navbar = document.getElementById('navbar');
   const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 40);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // Mobile drawer
+  // ---- Mobile drawer ----
   const navToggle = document.getElementById('navToggle');
   const navLinks = document.getElementById('navLinks');
-  navToggle.addEventListener('click', () => {
-    const open = navLinks.classList.toggle('active');
+
+  function setDrawer(open) {
+    navLinks.classList.toggle('active', open);
     navToggle.classList.toggle('active', open);
     navToggle.setAttribute('aria-expanded', String(open));
-  });
-  navLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-    navLinks.classList.remove('active');
-    navToggle.classList.remove('active');
-    navToggle.setAttribute('aria-expanded', 'false');
-  }));
+    // Stop the page scrolling behind the open drawer.
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (!open) navToggle.focus({ preventScroll: true });
+  }
 
-  // Smooth scroll for same-page anchors only
+  navToggle.addEventListener('click', () => setDrawer(!navLinks.classList.contains('active')));
+  navLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setDrawer(false)));
+
+  // Escape closes it, and so does a click on the page behind it.
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && navLinks.classList.contains('active')) setDrawer(false);
+  });
+  document.addEventListener('click', e => {
+    if (!navLinks.classList.contains('active')) return;
+    if (!navLinks.contains(e.target) && !navToggle.contains(e.target)) setDrawer(false);
+  });
+
+  // ---- Smooth scroll for same-page anchors ----
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       const href = this.getAttribute('href');
@@ -111,13 +124,18 @@
       const target = document.querySelector(href);
       if (!target) return;
       e.preventDefault();
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      // Keep the URL shareable and move keyboard focus with the eye.
+      history.replaceState(null, '', href);
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
     });
   });
 
-  // Scroll reveal. The hidden state lives behind .has-reveal on <html>, so it is
-  // only ever applied when we know an observer is available to undo it.
-  if ('IntersectionObserver' in window) {
+  // ---- Scroll reveal ----
+  // The hidden state lives behind .has-reveal on <html>, so it is only applied
+  // when we know an observer exists to undo it.
+  if ('IntersectionObserver' in window && !reduceMotion) {
     document.documentElement.classList.add('has-reveal');
     var revealObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -130,42 +148,72 @@
       const img = sec.querySelector('.custom-section-image');
       if (img) img.setAttribute('data-anim', 'slide-left');
     });
-    document.querySelectorAll('.pillar-card, .formation-card, .pro-card, .process-step, .cert-item, .testimonial-card, .gallery-item, .session-card, .about-content, .about-images, .contact-info, .contact-form-wrapper, .custom-section-content, .custom-section-image, .module-item, .outcome-item, .spec-row')
-      .forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--i', i % 4); revealObserver.observe(el); });
+    const revealTargets = document.querySelectorAll('.pillar-card, .formation-card, .pro-card, .process-step, .cert-item, .testimonial-card, .gallery-item, .session-card, .about-content, .about-images, .contact-info, .contact-form-wrapper, .custom-section-content, .custom-section-image, .module-item, .outcome-item, .spec-row, .online-card');
+    revealTargets.forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--i', i % 4); revealObserver.observe(el); });
+
+    // Safety net: if the observer never fires (background tab, throttled
+    // renderer, odd browser), content must not stay invisible.
+    setTimeout(() => {
+      revealTargets.forEach(el => {
+        const box = el.getBoundingClientRect();
+        if (box.top < window.innerHeight && box.bottom > 0) el.classList.add('revealed');
+      });
+    }, 1200);
   }
 
-  // FAQ accordion
-  document.querySelectorAll('.faq-question').forEach(btn => {
+  // ---- FAQ accordion ----
+  document.querySelectorAll('.faq-question').forEach((btn, i) => {
+    const item = btn.parentElement;
+    const answer = item.querySelector('.faq-answer');
+    if (answer && !answer.id) {
+      answer.id = 'faq-answer-' + i;
+      btn.setAttribute('aria-controls', answer.id);
+      answer.setAttribute('role', 'region');
+    }
     btn.addEventListener('click', () => {
-      const open = btn.parentElement.classList.toggle('open');
+      const open = item.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(open));
     });
   });
 
-  // Async form submission
+  // ---- Async form submission ----
+  // A polite live region so screen readers hear the result; the button label
+  // alone changes silently for them.
+  const formStatus = document.createElement('div');
+  formStatus.setAttribute('role', 'status');
+  formStatus.setAttribute('aria-live', 'polite');
+  formStatus.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap';
+  document.body.appendChild(formStatus);
+
   function handleFormSubmit(form, endpoint, submitText) {
     if (!form) return;
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       const btn = this.querySelector('button[type="submit"]');
+      if (btn.disabled) return;                       // guard against double submit
       const formData = new FormData(this);
       btn.disabled = true;
       btn.textContent = T.form_sending;
+      formStatus.textContent = T.form_sending;
       fetch(endpoint, { method: 'POST', body: formData })
-        .then(r => r.json())
+        .then(r => r.json().catch(() => ({ error: T.form_error })))
         .then(data => {
           if (data.success) {
             btn.textContent = T.form_success;
             btn.classList.add('is-success');
+            formStatus.textContent = T.form_success;
             form.reset();
           } else {
+            // Keep what the visitor typed so they can correct one field.
             btn.textContent = data.error || T.form_error;
             btn.classList.add('is-error');
+            formStatus.textContent = data.error || T.form_error;
           }
         })
         .catch(() => {
           btn.textContent = T.form_network_error;
           btn.classList.add('is-error');
+          formStatus.textContent = T.form_network_error;
         })
         .finally(() => {
           setTimeout(() => {

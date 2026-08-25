@@ -3,8 +3,8 @@
 {% set formation_url_base = '/formation/' if lang == 'fr' else '/' + lang + '/formation/' %}
 {% set pole_label = {'culinary': t.tab_culinary, 'hospitality': t.tab_hospitality, 'it': t.tab_it}.get(formation.category, t.tab_all) %}
 {% set fallback_image = {
-     'it': 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=800&fit=crop',
-     'hospitality': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&h=800&fit=crop'
+     'it': 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=800&fit=crop',
+     'hospitality': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1200&h=800&fit=crop'
    }.get(formation.category, 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&h=800&fit=crop') %}
 {% set modules = (formation.program_content or formation.features or '').split('|') %}
 {% set outcomes = (formation.career_outcomes or '').split('|') %}
@@ -16,13 +16,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ formation.title }} — {{ settings.get('site_name', 'BTSP') }}</title>
   <meta name="description" content="{{ formation.description[:160] }}">
-  <meta name="theme-color" content="#0A2A63">
+  <meta name="theme-color" content="#1E3FD0">
   <meta property="og:title" content="{{ formation.title }} — {{ settings.get('site_name', 'BTSP') }}">
   <meta property="og:description" content="{{ formation.description[:160] }}">
   <meta property="og:type" content="article">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   {% if lang == 'ar' %}
   <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}

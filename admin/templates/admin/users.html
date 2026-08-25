@@ -9,9 +9,9 @@
 <div class="card">
   <div class="card-body">
     <p class="text-sm text-muted" style="margin:0">
-      <strong>Administrateur du site</strong> : accès à tout le back-office (contenu, site, e-learning, école).<br>
-      <strong>Personnel école</strong> : accès uniquement à la section École — inscriptions, enseignants,
-      classes, élèves et paiements. Le reste est invisible et inaccessible.
+      <strong>Directeur</strong> : accès complet — contenu du site, formations, e-learning, école, paramètres et comptes.<br>
+      <strong>Personnel École</strong> : accès uniquement à la gestion de l'école — enseignants,
+      classes, élèves, paiements et inscriptions. Le reste du back-office est invisible et inaccessible.
     </p>
   </div>
 </div>
@@ -38,9 +38,9 @@
           <td class="text-sm">{{ u.full_name or '—' }}</td>
           <td>
             {% if u.role == 'super' %}
-              <span class="badge badge-info">Administrateur du site</span>
+              <span class="badge badge-info">Directeur</span>
             {% else %}
-              <span class="badge badge-muted">Personnel école</span>
+              <span class="badge badge-muted">Personnel École</span>
             {% endif %}
           </td>
           <td>

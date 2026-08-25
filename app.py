@@ -165,10 +165,14 @@ def get_db():
         if USE_PG:
             g.db = PgConnectionWrapper(DATABASE_URL)
         else:
-            g.db = sqlite3.connect(DB_PATH)
+            g.db = sqlite3.connect(DB_PATH, timeout=15)
             g.db.row_factory = sqlite3.Row
             g.db.execute("PRAGMA journal_mode=WAL")
             g.db.execute("PRAGMA foreign_keys=ON")
+            # Wait for a concurrent writer instead of failing instantly. With
+            # several gunicorn workers on one SQLite file, the default (0 ms)
+            # turns a momentary overlap into a 500.
+            g.db.execute("PRAGMA busy_timeout=15000")
     return g.db
 
 
@@ -757,7 +761,7 @@ def super_required(view):
     @login_required
     def wrapped(*args, **kwargs):
         if not current_user.is_super:
-            flash("Cette section est réservée à l'administrateur du site.", "error")
+            flash("Cette section est réservée au directeur.", "error")
             return redirect(url_for("admin_dashboard"))
         return view(*args, **kwargs)
 
@@ -780,6 +784,29 @@ def save_upload(file, subfolder):
         file.save(filepath)
         return f"/uploads/{subfolder}/{filename}"
     return None
+
+
+def form_int(name, default=0, minimum=None, maximum=None):
+    """Read an integer from the form without crashing on junk.
+
+    `int(request.form.get("x", 0))` only falls back when the key is absent — a
+    cleared number input posts "x=" and raised ValueError, returning a bare 500
+    and losing everything the user had typed.
+    """
+    raw = (request.form.get(name) or "").strip()
+    try:
+        parsed = float(raw)
+    except (TypeError, ValueError):
+        return default
+    # "1e999" parses to inf, and int(inf) raises OverflowError.
+    if parsed != parsed or parsed in (float("inf"), float("-inf")):
+        return default
+    value = int(parsed)
+    if minimum is not None:
+        value = max(value, minimum)
+    if maximum is not None:
+        value = min(value, maximum)
+    return value
 
 
 def get_settings():
@@ -976,6 +1003,10 @@ def render_formation(formation_id, lang):
 @app.route("/api/inscription", methods=["POST"])
 def submit_inscription():
     data = request.form
+    if data.get("website", "").strip():
+        # Honeypot field, invisible to humans. Answer 200 so the bot believes
+        # it succeeded and does not retry, but store nothing.
+        return jsonify({"success": True, "message": "OK"})
     inscription_type = data.get("inscription_type", "individual")
 
     if inscription_type == "corporate":
@@ -1001,7 +1032,7 @@ def submit_inscription():
             data.get("message", "").strip(),
             inscription_type,
             data.get("company_name", "").strip(),
-            int(data.get("num_participants", 1) or 1),
+            form_int("num_participants", 1, minimum=1, maximum=100000),
             data.get("desired_dates", "").strip(),
             data.get("budget", "").strip(),
         ),
@@ -1013,6 +1044,8 @@ def submit_inscription():
 @app.route("/api/proposal", methods=["POST"])
 def submit_proposal():
     data = request.form
+    if data.get("website", "").strip():
+        return jsonify({"success": True, "message": "OK"})
     required = ["company_name", "contact_name", "email", "phone", "training_type"]
     for field in required:
         if not data.get(field, "").strip():
@@ -1028,7 +1061,7 @@ def submit_proposal():
             data["email"].strip(),
             data["phone"].strip(),
             data["training_type"].strip(),
-            int(data.get("num_participants", 1) or 1),
+            form_int("num_participants", 1, minimum=1, maximum=100000),
             data.get("objectives", "").strip(),
             data.get("budget", "").strip(),
             data.get("timeline", "").strip(),
@@ -1156,7 +1189,7 @@ def admin_formation_add():
                 image_url,
                 request.form.get("badge", "").strip(),
                 1 if request.form.get("featured") else 0,
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("category", "culinary"),
                 request.form.get("lang", "fr"),
                 request.form.get("long_description", "").strip(),
@@ -1197,7 +1230,7 @@ def admin_formation_edit(id):
                 image_url,
                 request.form.get("badge", "").strip(),
                 1 if request.form.get("featured") else 0,
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("category", "culinary"),
                 request.form.get("lang", "fr"),
                 request.form.get("long_description", "").strip(),
@@ -1255,7 +1288,7 @@ def admin_certificate_add():
             (
                 request.form["title"].strip(),
                 request.form["description"].strip(),
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("lang", "fr"),
             ),
         )
@@ -1280,7 +1313,7 @@ def admin_certificate_edit(id):
             (
                 request.form["title"].strip(),
                 request.form["description"].strip(),
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("lang", "fr"),
                 id,
             ),
@@ -1324,7 +1357,7 @@ def admin_testimonial_add():
                 name,
                 request.form["promotion"].strip(),
                 request.form["content"].strip(),
-                int(request.form.get("rating", 5)),
+                form_int("rating", 5, minimum=1, maximum=5),
                 name[0].upper() if name else "?",
                 request.form.get("lang", "fr"),
             ),
@@ -1351,7 +1384,7 @@ def admin_testimonial_edit(id):
                 name,
                 request.form["promotion"].strip(),
                 request.form["content"].strip(),
-                int(request.form.get("rating", 5)),
+                form_int("rating", 5, minimum=1, maximum=5),
                 name[0].upper() if name else "?",
                 request.form.get("lang", "fr"),
                 id,
@@ -1398,7 +1431,7 @@ def admin_gallery_add():
                 request.form["title"].strip(),
                 image_url,
                 1 if request.form.get("large") else 0,
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("lang", "fr"),
             ),
         )
@@ -1426,7 +1459,7 @@ def admin_gallery_edit(id):
                 request.form["title"].strip(),
                 image_url,
                 1 if request.form.get("large") else 0,
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 request.form.get("lang", "fr"),
                 id,
             ),
@@ -1509,7 +1542,7 @@ def admin_section_add():
                 request.form.get("button_text", "").strip(),
                 request.form.get("button_link", "").strip(),
                 request.form.get("animation", "fade-up"),
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 1 if request.form.get("active") is None or request.form.get("active") else 1,
                 request.form.get("lang", "fr"),
             ),
@@ -1546,7 +1579,7 @@ def admin_section_edit(id):
                 request.form.get("button_text", "").strip(),
                 request.form.get("button_link", "").strip(),
                 request.form.get("animation", "fade-up"),
-                int(request.form.get("sort_order", 0)),
+                form_int("sort_order", 0),
                 1 if request.form.get("active") else 0,
                 request.form.get("lang", "fr"),
                 id,
@@ -1702,7 +1735,7 @@ def admin_faq_add():
         db = get_db()
         db.execute("INSERT INTO faqs (question, answer, sort_order, lang) VALUES (?,?,?,?)",
                    (request.form["question"].strip(), request.form["answer"].strip(),
-                    int(request.form.get("sort_order", 0)), request.form.get("lang", "fr")))
+                    form_int("sort_order", 0), request.form.get("lang", "fr")))
         db.commit()
         flash("FAQ ajoutée.", "success")
         return redirect(url_for("admin_faqs"))
@@ -1720,7 +1753,7 @@ def admin_faq_edit(id):
     if request.method == "POST":
         db.execute("UPDATE faqs SET question=?, answer=?, sort_order=?, lang=? WHERE id=?",
                    (request.form["question"].strip(), request.form["answer"].strip(),
-                    int(request.form.get("sort_order", 0)), request.form.get("lang", "fr"), id))
+                    form_int("sort_order", 0), request.form.get("lang", "fr"), id))
         db.commit()
         flash("FAQ mise à jour.", "success")
         return redirect(url_for("admin_faqs"))
@@ -1755,7 +1788,7 @@ def admin_session_add():
         db.execute(
             "INSERT INTO training_sessions (title, start_date, end_date, spots_total, spots_taken, location, active, lang) VALUES (?,?,?,?,?,?,?,?)",
             (request.form["title"].strip(), request.form["start_date"], request.form.get("end_date", ""),
-             int(request.form.get("spots_total", 20)), int(request.form.get("spots_taken", 0)),
+             form_int("spots_total", 20, minimum=0), form_int("spots_taken", 0, minimum=0),
              request.form.get("location", "").strip(), 1, request.form.get("lang", "fr")))
         db.commit()
         flash("Session ajoutée.", "success")
@@ -1775,7 +1808,7 @@ def admin_session_edit(id):
         db.execute(
             "UPDATE training_sessions SET title=?, start_date=?, end_date=?, spots_total=?, spots_taken=?, location=?, active=?, lang=? WHERE id=?",
             (request.form["title"].strip(), request.form["start_date"], request.form.get("end_date", ""),
-             int(request.form.get("spots_total", 20)), int(request.form.get("spots_taken", 0)),
+             form_int("spots_total", 20, minimum=0), form_int("spots_taken", 0, minimum=0),
              request.form.get("location", "").strip(), 1 if request.form.get("active") else 0,
              request.form.get("lang", "fr"), id))
         db.commit()
@@ -1815,7 +1848,7 @@ def admin_partner_add():
         db = get_db()
         db.execute("INSERT INTO partners (name, logo, website_url, sort_order) VALUES (?,?,?,?)",
                    (request.form["name"].strip(), logo_url,
-                    request.form.get("website_url", "").strip(), int(request.form.get("sort_order", 0))))
+                    request.form.get("website_url", "").strip(), form_int("sort_order", 0)))
         db.commit()
         flash("Partenaire ajouté.", "success")
         return redirect(url_for("admin_partners"))
@@ -1836,7 +1869,7 @@ def admin_partner_edit(id):
             logo_url = save_upload(request.files["logo"], "partners") or logo_url
         db.execute("UPDATE partners SET name=?, logo=?, website_url=?, sort_order=? WHERE id=?",
                    (request.form["name"].strip(), logo_url,
-                    request.form.get("website_url", "").strip(), int(request.form.get("sort_order", 0)), id))
+                    request.form.get("website_url", "").strip(), form_int("sort_order", 0), id))
         db.commit()
         flash("Partenaire mis à jour.", "success")
         return redirect(url_for("admin_partners"))
@@ -1872,6 +1905,65 @@ def student_required(f):
         g.student = student
         return f(*args, **kwargs)
     return decorated
+
+
+def module_access(module_id):
+    """Return (module, error_redirect) for a module the student may open.
+
+    Both write endpoints below reached the database with a raw URL id, so a
+    bogus id was a 500 and a module from a course the student never enrolled in
+    was writable. One helper keeps all three routes consistent.
+    """
+    db = get_db()
+    module = db.execute("SELECT * FROM course_modules WHERE id = ?", (module_id,)).fetchone()
+    if not module:
+        flash("Ce module n'existe pas.", "error")
+        return None, redirect(url_for("student_courses"))
+    enrolled = db.execute(
+        "SELECT 1 FROM student_enrollments WHERE student_id=? AND course_id=?",
+        (g.student["id"], module["course_id"]),
+    ).fetchone()
+    if not enrolled:
+        flash("Inscrivez-vous à ce cours pour accéder à son contenu.", "warning")
+        return None, redirect(url_for("student_course", course_id=module["course_id"]))
+    return module, None
+
+
+def sync_course_completion(student_id, course_id):
+    """Mark the enrolment complete once every module is done.
+
+    Called from both completion paths. Previously only the "mark complete"
+    button ran this, so a student who finished their last module by passing its
+    quiz never had the course closed out and never received a certificate.
+    Returns True when this call is what completed the course.
+    """
+    db = get_db()
+    total = db.execute(
+        "SELECT COUNT(*) FROM course_modules WHERE course_id=?", (course_id,)
+    ).fetchone()[0]
+    if not total:
+        return False
+    done = db.execute(
+        """SELECT COUNT(*) FROM student_progress sp
+             JOIN course_modules cm ON sp.module_id = cm.id
+            WHERE sp.student_id=? AND cm.course_id=? AND sp.completed=1""",
+        (student_id, course_id),
+    ).fetchone()[0]
+    if done < total:
+        return False
+    already = db.execute(
+        "SELECT completed FROM student_enrollments WHERE student_id=? AND course_id=?",
+        (student_id, course_id),
+    ).fetchone()
+    if already and already["completed"]:
+        return False
+    db.execute(
+        "UPDATE student_enrollments SET completed=1, completed_at=CURRENT_TIMESTAMP"
+        " WHERE student_id=? AND course_id=?",
+        (student_id, course_id),
+    )
+    db.commit()
+    return True
 
 
 def check_and_award_rewards(student_id):
@@ -2002,6 +2094,10 @@ def student_courses():
 @student_required
 def student_enroll(course_id):
     db = get_db()
+    course = db.execute("SELECT id FROM courses WHERE id=? AND active=1", (course_id,)).fetchone()
+    if not course:
+        flash("Ce cours n'est pas disponible.", "error")
+        return redirect(url_for("student_courses"))
     existing = db.execute("SELECT id FROM student_enrollments WHERE student_id=? AND course_id=?", (g.student["id"], course_id)).fetchone()
     if not existing:
         db.execute("INSERT INTO student_enrollments (student_id, course_id) VALUES (?,?)", (g.student["id"], course_id))
@@ -2030,18 +2126,9 @@ def student_course(course_id):
 @student_required
 def student_module(module_id):
     db = get_db()
-    module = db.execute("SELECT * FROM course_modules WHERE id = ?", (module_id,)).fetchone()
-    if not module:
-        return redirect(url_for("student_courses"))
-    # Module content is enrolment-gated: without this check any signed-in student
-    # could read any course's material by guessing module ids.
-    enrolled = db.execute(
-        "SELECT 1 FROM student_enrollments WHERE student_id=? AND course_id=?",
-        (g.student["id"], module["course_id"]),
-    ).fetchone()
-    if not enrolled:
-        flash("Inscrivez-vous à ce cours pour accéder à son contenu.", "warning")
-        return redirect(url_for("student_course", course_id=module["course_id"]))
+    module, denied = module_access(module_id)
+    if denied:
+        return denied
     course = db.execute("SELECT * FROM courses WHERE id = ?", (module["course_id"],)).fetchone()
     # Mark as watched
     existing = db.execute("SELECT * FROM student_progress WHERE student_id=? AND module_id=?", (g.student["id"], module_id)).fetchone()
@@ -2055,24 +2142,20 @@ def student_module(module_id):
 @app.route("/student/module/<int:module_id>/complete", methods=["POST"])
 @student_required
 def student_complete_module(module_id):
+    module, denied = module_access(module_id)
+    if denied:
+        return denied
     db = get_db()
     db.execute("""INSERT INTO student_progress (student_id, module_id, watched, completed, completed_at)
         VALUES (?,?,1,1,CURRENT_TIMESTAMP)
         ON CONFLICT(student_id, module_id) DO UPDATE SET completed=1, watched=1, completed_at=CURRENT_TIMESTAMP""",
         (g.student["id"], module_id))
     db.commit()
-    # Check if course is complete
-    module = db.execute("SELECT course_id FROM course_modules WHERE id=?", (module_id,)).fetchone()
-    if module:
-        total = db.execute("SELECT COUNT(*) FROM course_modules WHERE course_id=?", (module["course_id"],)).fetchone()[0]
-        done = db.execute("""SELECT COUNT(*) FROM student_progress sp JOIN course_modules cm ON sp.module_id=cm.id
-            WHERE sp.student_id=? AND cm.course_id=? AND sp.completed=1""",
-            (g.student["id"], module["course_id"])).fetchone()[0]
-        if done >= total and total > 0:
-            db.execute("UPDATE student_enrollments SET completed=1, completed_at=CURRENT_TIMESTAMP WHERE student_id=? AND course_id=?",
-                       (g.student["id"], module["course_id"]))
-            db.commit()
+    finished = sync_course_completion(g.student["id"], module["course_id"])
     check_and_award_rewards(g.student["id"])
+    if finished:
+        flash("Cours terminé ! Votre certificat est disponible.", "success")
+        return redirect(url_for("student_certificates"))
     flash("Module terminé !", "success")
     return redirect(url_for("student_module", module_id=module_id))
 
@@ -2080,8 +2163,16 @@ def student_complete_module(module_id):
 @app.route("/student/quiz/<int:module_id>", methods=["POST"])
 @student_required
 def student_submit_quiz(module_id):
+    module, denied = module_access(module_id)
+    if denied:
+        return denied
     db = get_db()
     quizzes = db.execute("SELECT * FROM quizzes WHERE module_id=? ORDER BY sort_order", (module_id,)).fetchall()
+    if not quizzes:
+        # Without this, submitting a module that has no questions recorded a
+        # bogus 0/0 failed attempt against the student.
+        flash("Ce module ne comporte pas de quiz.", "error")
+        return redirect(url_for("student_module", module_id=module_id))
     score = 0
     for q in quizzes:
         answer = request.form.get(f"q_{q['id']}", "")
@@ -2099,8 +2190,12 @@ def student_submit_quiz(module_id):
             ON CONFLICT(student_id, module_id) DO UPDATE SET completed=1, watched=1, completed_at=CURRENT_TIMESTAMP""",
             (g.student["id"], module_id))
         db.commit()
+    finished = sync_course_completion(g.student["id"], module["course_id"]) if passed else False
     check_and_award_rewards(g.student["id"])
     flash(f"Quiz terminé : {score}/{total} {'- Réussi !' if passed else '- Essayez encore.'}", "success" if passed else "error")
+    if finished:
+        flash("Cours terminé ! Votre certificat est disponible.", "success")
+        return redirect(url_for("student_certificates"))
     return redirect(url_for("student_module", module_id=module_id))
 
 
@@ -2196,7 +2291,7 @@ def admin_module_add(course_id):
             "INSERT INTO course_modules (course_id, title, description, video_url, materials_url, duration_minutes, sort_order) VALUES (?,?,?,?,?,?,?)",
             (course_id, request.form["title"].strip(), request.form.get("description", "").strip(),
              request.form.get("video_url", "").strip(), request.form.get("materials_url", "").strip(),
-             int(request.form.get("duration_minutes", 0)), int(request.form.get("sort_order", 0))))
+             form_int("duration_minutes", 0, minimum=0), form_int("sort_order", 0)))
         db.commit()
         flash("Module ajouté.", "success")
         return redirect(url_for("admin_modules", course_id=course_id))
@@ -2216,7 +2311,7 @@ def admin_module_edit(id):
             "UPDATE course_modules SET title=?, description=?, video_url=?, materials_url=?, duration_minutes=?, sort_order=? WHERE id=?",
             (request.form["title"].strip(), request.form.get("description", "").strip(),
              request.form.get("video_url", "").strip(), request.form.get("materials_url", "").strip(),
-             int(request.form.get("duration_minutes", 0)), int(request.form.get("sort_order", 0)), id))
+             form_int("duration_minutes", 0, minimum=0), form_int("sort_order", 0), id))
         db.commit()
         flash("Module mis à jour.", "success")
         return redirect(url_for("admin_modules", course_id=module["course_id"]))
@@ -2246,7 +2341,7 @@ def admin_quizzes(module_id):
             (module_id, request.form["question"].strip(), request.form["option_a"].strip(),
              request.form["option_b"].strip(), request.form.get("option_c", "").strip(),
              request.form.get("option_d", "").strip(), request.form["correct_answer"],
-             int(request.form.get("sort_order", 0))))
+             form_int("sort_order", 0)))
         db.commit()
         flash("Question ajoutée.", "success")
         return redirect(url_for("admin_quizzes", module_id=module_id))
@@ -2511,9 +2606,13 @@ def _class_form():
     def _num(name):
         raw = request.form.get(name, "").strip()
         try:
-            return float(raw)
-        except ValueError:
+            value = float(raw)
+        except (TypeError, ValueError):
             return 0.0
+        # Reject inf/NaN and negatives: one bad fee poisoned the month totals.
+        if value != value or value in (float("inf"), float("-inf")) or value < 0:
+            return 0.0
+        return round(value, 2)
 
     def _fk(name):
         raw = request.form.get(name, "").strip()
@@ -2644,9 +2743,13 @@ def _pupil_form():
     def _num(name):
         raw = request.form.get(name, "").strip()
         try:
-            return float(raw)
-        except ValueError:
+            value = float(raw)
+        except (TypeError, ValueError):
             return 0.0
+        # Reject inf/NaN and negatives: one bad fee poisoned the month totals.
+        if value != value or value in (float("inf"), float("-inf")) or value < 0:
+            return 0.0
+        return round(value, 2)
 
     return (
         request.form["first_name"].strip(),

@@ -29,14 +29,14 @@
         <label for="role">Rôle</label>
         <select id="role" name="role">
           <option value="school" {% if user and user.role != 'super' %}selected{% endif %}>
-            Personnel école — section École uniquement
+            Personnel École — enseignants, classes, élèves, paiements
           </option>
           <option value="super" {% if user and user.role == 'super' %}selected{% endif %}>
-            Administrateur du site — accès complet
+            Directeur — accès complet à tout le back-office
           </option>
         </select>
         <div class="help">
-          Le personnel école ne voit que les inscriptions, enseignants, classes, élèves et paiements.
+          Le personnel École ne voit que les enseignants, classes, élèves, paiements et inscriptions.
         </div>
       </div>
 

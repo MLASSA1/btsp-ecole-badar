@@ -8,13 +8,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ settings.get('site_name', 'BTSP') }} — {{ settings.get('site_name_full', 'École BADAR Training and Service') }}</title>
   <meta name="description" content="{{ settings.get('site_tagline', '') }}">
-  <meta name="theme-color" content="#0A2A63">
+  <meta name="theme-color" content="#1E3FD0">
   <meta property="og:title" content="{{ settings.get('site_name_full', 'BTSP') }}">
   <meta property="og:description" content="{{ settings.get('site_tagline', '') }}">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   {% if lang == 'ar' %}
   <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}
@@ -86,7 +86,7 @@
       <div class="pillars-grid">
         <article class="pillar-card" data-goto="culinary">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=760&h=520&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=760&h=520&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
             <span class="pillar-index">01</span>
           </div>
           <div class="pillar-body">
@@ -102,7 +102,7 @@
         </article>
         <article class="pillar-card" data-goto="hospitality">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=760&h=520&fit=crop" alt="{{ t.pillar_2_title }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=760&h=520&fit=crop" alt="{{ t.pillar_2_title }}" loading="lazy">
             <span class="pillar-index">02</span>
           </div>
           <div class="pillar-body">
@@ -118,7 +118,7 @@
         </article>
         <article class="pillar-card" data-goto="business">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=760&h=520&fit=crop" alt="{{ t.pillar_3_title }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=760&h=520&fit=crop" alt="{{ t.pillar_3_title }}" loading="lazy">
             <span class="pillar-index">03</span>
           </div>
           <div class="pillar-body">
@@ -134,7 +134,7 @@
         </article>
         <article class="pillar-card" data-goto="health">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=760&h=520&fit=crop" alt="{{ t.pillar_4_title }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=760&h=520&fit=crop" alt="{{ t.pillar_4_title }}" loading="lazy">
             <span class="pillar-index">04</span>
           </div>
           <div class="pillar-body">
@@ -160,10 +160,10 @@
       <div class="about-grid">
         <div class="about-images">
           <div class="about-img about-img-1">
-            <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=620&h=780&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=620&h=780&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-img about-img-2">
-            <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=420&h=560&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=420&h=560&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-float-card">
             <span class="float-number">{{ settings.get('years_experience', '12') }}</span>
@@ -228,9 +228,9 @@
             {% if f.image %}
               <img src="{{ f.image }}" alt="{{ f.title }}" loading="lazy">
             {% elif f.category == 'it' %}
-              <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
+              <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% elif f.category == 'hospitality' %}
-              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
+              <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% else %}
               <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
             {% endif %}
@@ -531,17 +531,17 @@
           {% endfor %}
         {% else %}
           <div class="gallery-item gallery-large">
-            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=900&h=560&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=900&h=560&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
             <span class="gallery-caption">{{ t.pillar_1_title }}</span>
           </div>
           <div class="gallery-item">
-            <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=460&h=560&fit=crop" alt="{{ t.tab_culinary }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=460&h=560&fit=crop" alt="{{ t.tab_culinary }}" loading="lazy">
           </div>
           <div class="gallery-item">
-            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=460&h=560&fit=crop" alt="{{ t.tab_it }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=460&h=560&fit=crop" alt="{{ t.tab_it }}" loading="lazy">
           </div>
           <div class="gallery-item">
-            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=460&h=560&fit=crop" alt="{{ t.tab_hospitality }}" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=460&h=560&fit=crop" alt="{{ t.tab_hospitality }}" loading="lazy">
           </div>
           <div class="gallery-item gallery-large">
             <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&h=560&fit=crop" alt="{{ t.pillars_tag }}" loading="lazy">
@@ -690,6 +690,9 @@
           <form class="contact-form" id="contactForm">
             <h3>{{ t.form_title }}</h3>
             <input type="hidden" name="inscription_type" value="individual">
+            <div class="hp" aria-hidden="true">
+              <label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="prenom">{{ t.form_firstname }}</label>
@@ -744,6 +747,9 @@
       <div class="corporate-form-wrapper" id="pane-corporateForm">
         <form id="corporateForm">
           <input type="hidden" name="inscription_type" value="corporate">
+            <div class="hp" aria-hidden="true">
+              <label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
           <div class="form-row">
             <div class="form-group">
               <label for="corp_company">{{ t.form_company }}</label>
@@ -808,6 +814,9 @@
 
       <div class="corporate-form-wrapper" id="pane-proposalForm" hidden>
         <form id="proposalForm">
+            <div class="hp" aria-hidden="true">
+              <label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
           <div class="form-row">
             <div class="form-group">
               <label for="prop_company">{{ t.proposal_company }}</label>
@@ -874,42 +883,88 @@
   {% include 'public/_footer.html' %}
 
   <script>
-    // Programme category filter
-    document.querySelectorAll('.formation-tabs .tab').forEach(tab => {
-      tab.addEventListener('click', function () {
-        document.querySelectorAll('.formation-tabs .tab').forEach(t => {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-selected', 'true');
-        const cat = this.dataset.cat;
-        document.querySelectorAll('.formation-card').forEach(card => {
-          card.hidden = !(cat === 'all' || card.dataset.category === cat);
-        });
-      });
-    });
+    // ---- Programme category filter ----
+    const tabs = [...document.querySelectorAll('.formation-tabs .tab')];
+    const cards = [...document.querySelectorAll('.formation-card')];
+    const grid = document.querySelector('.formations-grid');
 
-    // Jump from a pole card straight to its filtered programmes
+    // A live count, and a message when a filter matches nothing, so the grid is
+    // never just silently empty.
+    let countEl = null, emptyEl = null;
+    if (grid) {
+      countEl = document.createElement('p');
+      countEl.className = 'formations-count';
+      countEl.setAttribute('aria-live', 'polite');
+      grid.parentNode.insertBefore(countEl, grid);
+
+      emptyEl = document.createElement('p');
+      emptyEl.className = 'formations-empty';
+      emptyEl.hidden = true;
+      emptyEl.textContent = {{ t.formations_empty|tojson }};
+      grid.parentNode.insertBefore(emptyEl, grid.nextSibling);
+    }
+
+    function applyFilter(cat, push) {
+      tabs.forEach(t => {
+        const on = t.dataset.cat === cat;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      let shown = 0;
+      cards.forEach(card => {
+        const visible = cat === 'all' || card.dataset.category === cat;
+        card.hidden = !visible;
+        if (visible) shown++;
+      });
+      if (countEl) countEl.textContent = shown + ' ' + (shown > 1 ? {{ t.formations_count_plural|tojson }} : {{ t.formations_count_one|tojson }});
+      if (emptyEl) emptyEl.hidden = shown !== 0;
+      // Remember the choice so reload and the back button keep it.
+      if (push) history.replaceState(null, '', cat === 'all' ? location.pathname + '#formations' : location.pathname + '#cat=' + cat);
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => applyFilter(tab.dataset.cat, true)));
+
+    // Arrow keys move between tabs, as a tablist should.
+    tabs.forEach((tab, i) => tab.addEventListener('keydown', e => {
+      const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!dir) return;
+      e.preventDefault();
+      const next = tabs[(i + dir + tabs.length) % tabs.length];
+      next.focus();
+      applyFilter(next.dataset.cat, true);
+    }));
+
+    // Restore a category from the URL (#cat=health) on load.
+    const fromHash = (location.hash.match(/^#cat=([a-z]+)$/) || [])[1];
+    applyFilter(fromHash && tabs.some(t => t.dataset.cat === fromHash) ? fromHash : 'all', false);
+    if (fromHash) document.getElementById('formations')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+
+    // ---- Jump from a pôle card straight to its filtered programmes ----
     document.querySelectorAll('.pillar-card[data-goto] .link-arrow').forEach(link => {
-      link.addEventListener('click', () => {
-        const tab = document.querySelector('.formation-tabs .tab[data-cat="' + link.closest('.pillar-card').dataset.goto + '"]');
-        if (tab) tab.click();
-      });
+      link.addEventListener('click', () => applyFilter(link.closest('.pillar-card').dataset.goto, true));
     });
 
-    // Professional enquiry form switcher
-    document.querySelectorAll('.pro-tab').forEach(tab => {
-      tab.addEventListener('click', function () {
-        document.querySelectorAll('.pro-tab').forEach(t => {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-selected', 'true');
-        document.querySelectorAll('[id^="pane-"]').forEach(p => { p.hidden = true; });
-        const pane = document.getElementById('pane-' + this.dataset.form);
-        if (pane) pane.hidden = false;
+    // ---- Professional enquiry form switcher ----
+    const proTabs = [...document.querySelectorAll('.pro-tab')];
+    function showPane(name) {
+      proTabs.forEach(t => {
+        const on = t.dataset.form === name;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      document.querySelectorAll('[id^="pane-"]').forEach(p => { p.hidden = p.id !== 'pane-' + name; });
+    }
+    proTabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => showPane(tab.dataset.form));
+      tab.addEventListener('keydown', e => {
+        const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!dir) return;
+        e.preventDefault();
+        const next = proTabs[(i + dir + proTabs.length) % proTabs.length];
+        next.focus();
+        showPane(next.dataset.form);
       });
     });
 
@@ -917,26 +972,33 @@
     handleFormSubmit(document.getElementById('corporateForm'), '/api/inscription', T.form_corporate_submit);
     handleFormSubmit(document.getElementById('proposalForm'), '/api/proposal', T.proposal_submit);
 
-    // Animated stat counters
-    const counterObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        const el = entry.target;
-        const match = el.textContent.match(/(\d+)/);
-        counterObserver.unobserve(el);
-        if (!match) return;
-        const target = parseInt(match[1], 10);
-        const template = el.textContent;
-        let current = 0;
-        const step = Math.max(1, Math.round(target / 45));
-        const tick = setInterval(() => {
-          current = Math.min(current + step, target);
-          el.textContent = template.replace(match[1], String(current));
-          if (current >= target) clearInterval(tick);
-        }, 22);
-      });
-    }, { threshold: 0.6 });
-    document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
+    // ---- Animated stat counters ----
+    // requestAnimationFrame with easing rather than a fixed-step interval, so
+    // the count lands exactly on the real figure at the same moment on any
+    // device, and is skipped entirely for reduced-motion users.
+    if ('IntersectionObserver' in window && !reduceMotion) {
+      const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          counterObserver.unobserve(el);
+          const template = el.textContent;
+          const match = template.match(/(\d+)/);
+          if (!match) return;
+          const target = parseInt(match[1], 10);
+          const started = performance.now();
+          const DURATION = 1100;
+          (function step(now) {
+            const p = Math.min((now - started) / DURATION, 1);
+            const eased = 1 - Math.pow(1 - p, 3);          // ease-out cubic
+            el.textContent = template.replace(match[1], String(Math.round(target * eased)));
+            if (p < 1) requestAnimationFrame(step);
+            else el.textContent = template;                 // land on the exact value
+          })(started);
+        });
+      }, { threshold: 0.6 });
+      document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
+    }
   </script>
 </body>
 </html>
