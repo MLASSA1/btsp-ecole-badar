@@ -3057,6 +3057,90 @@ def admin_payment_mark():
 # Run at import so gunicorn (`app:app`) gets the schema too — previously these
 # only ran under `python app.py`, so new tables never reached production. Both
 # are idempotent.
+# Each programme gets a photograph of its own trade. Keyed by title rather
+# than id because a fresh install numbers the catalogue differently, and only
+# applied to rows with no image, so anything an admin uploads later stands.
+FORMATION_IMAGES = {
+    "Réceptionniste d'Hôtel":
+        "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=900&h=600&fit=crop&q=75",
+    "Femme de Chambre / Valet de Chambre":
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=900&h=600&fit=crop&q=75",
+    "Barman – Barista":
+        "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=900&h=600&fit=crop&q=75",
+    "Service en Restauration Gastronomique":
+        "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&h=600&fit=crop&q=75",
+    "Relation Client et Accueil":
+        "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=900&h=600&fit=crop&q=75",
+    "Cuisine Marocaine et Internationale":
+        "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=900&h=600&fit=crop&q=75",
+    "Boulangerie":
+        "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&h=600&fit=crop&q=75",
+    "Boucherie et Charcuterie":
+        "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=900&h=600&fit=crop&q=75",
+    "Traiteur et Organisation des Événements":
+        "https://images.unsplash.com/photo-1555244162-803834f70033?w=900&h=600&fit=crop&q=75",
+    "Décoration et Présentation des Plats":
+        "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=900&h=600&fit=crop&q=75",
+    "Sécurité Alimentaire (Food Safety)":
+        "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=900&h=600&fit=crop&q=75",
+    "Gestion des Stocks et Approvisionnement":
+        "https://images.unsplash.com/photo-1553413077-190dd305871c?w=900&h=600&fit=crop&q=75",
+    "Commerce et Vente":
+        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&h=600&fit=crop&q=75",
+    "Entrepreneuriat et Création d'Entreprise":
+        "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900&h=600&fit=crop&q=75",
+    "Informatique Bureautique (Word, Excel, PowerPoint)":
+        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&h=600&fit=crop&q=75",
+    "Marketing Digital":
+        "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=900&h=600&fit=crop&q=75",
+    "Langue Française Professionnelle":
+        "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=900&h=600&fit=crop&q=75",
+    "Anglais Professionnel pour l'Hôtellerie et le Tourisme":
+        "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=900&h=600&fit=crop&q=75",
+    "Techniques de Communication Professionnelle":
+        "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=900&h=600&fit=crop&q=75",
+    "Technicien en Laboratoire d'Analyses Médicales":
+        "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=900&h=600&fit=crop&q=75",
+    "Aide aux Personnes Âgées":
+        "https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=900&h=600&fit=crop&q=75",
+    "Aide-Soignant / Assistant Thérapeute":
+        "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=900&h=600&fit=crop&q=75",
+    "Technicien en Animation de Crèche et Jardin d'Enfants":
+        "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&h=600&fit=crop&q=75",
+    "Premiers Secours (Secourisme)":
+        "https://images.unsplash.com/photo-1584515933487-779824d29309?w=900&h=600&fit=crop&q=75",
+    "Cuisine — Diplôme d'État":
+        "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=900&h=600&fit=crop&q=75",
+    "Pâtisserie — Diplôme d'État":
+        "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=900&h=600&fit=crop&q=75",
+}
+
+
+def seed_formation_images():
+    """Fill in the stock photo for programmes that have none."""
+    db = get_db()
+    filled = 0
+    for title, url in FORMATION_IMAGES.items():
+        cur = db.execute(
+            "UPDATE formations SET image = ? WHERE title = ? AND (image IS NULL OR image = '')",
+            (url, title),
+        )
+        filled += cur.rowcount or 0
+    # The diploma specimen ships with the code, so point at it once.
+    row = db.execute(
+        "SELECT value FROM site_settings WHERE key = 'cert_specimen_image'"
+    ).fetchone()
+    if not row or not row["value"]:
+        db.execute(
+            "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            ("cert_specimen_image", "/uploads/diplome-specimen-btsp.jpg"),
+        )
+    db.commit()
+    if filled:
+        print(f">>> Seeded images for {filled} formation(s)")
+
+
 def seed_bundled_uploads():
     """Copy media shipped with the code onto the upload volume.
 
@@ -3085,6 +3169,7 @@ with app.app_context():
     init_db()
     migrate_db()
     seed_bundled_uploads()
+    seed_formation_images()
 
 
 if __name__ == "__main__":
