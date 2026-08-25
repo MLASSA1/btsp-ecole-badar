@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.DS_Store
+database.db
+database.db-shm
+database.db-wal
+.secret_key
+.claude/
+deploy-vps.sh
+update-vps.sh

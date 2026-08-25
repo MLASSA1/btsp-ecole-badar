@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 import secrets
+import shutil
 import uuid
 from datetime import date
 from functools import wraps
@@ -107,8 +108,13 @@ class PgConnectionWrapper:
 
 # --------------- Config ---------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database.db")
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+# In production the app runs from a container image that is replaced on every
+# release, so the database and the uploaded media have to live on a mounted
+# volume instead of next to the code — otherwise a deploy silently discards
+# every pupil, class and payment record.
+DB_PATH = os.environ.get("BTSP_DB_PATH") or os.path.join(BASE_DIR, "database.db")
+UPLOAD_DIR = os.environ.get("BTSP_UPLOAD_DIR") or os.path.join(BASE_DIR, "uploads")
+BUNDLED_UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
 
@@ -3051,9 +3057,34 @@ def admin_payment_mark():
 # Run at import so gunicorn (`app:app`) gets the schema too — previously these
 # only ran under `python app.py`, so new tables never reached production. Both
 # are idempotent.
+def seed_bundled_uploads():
+    """Copy media shipped with the code onto the upload volume.
+
+    Files committed to uploads/ (the diploma specimen) live inside the image,
+    while /uploads/<name> is served from the mounted volume. Without this the
+    site would ask for a file the volume has never seen. Existing files are
+    left alone so an admin's replacement is never overwritten by a deploy.
+    """
+    if os.path.abspath(UPLOAD_DIR) == os.path.abspath(BUNDLED_UPLOAD_DIR):
+        return
+    if not os.path.isdir(BUNDLED_UPLOAD_DIR):
+        return
+    for name in os.listdir(BUNDLED_UPLOAD_DIR):
+        source = os.path.join(BUNDLED_UPLOAD_DIR, name)
+        target = os.path.join(UPLOAD_DIR, name)
+        if os.path.isfile(source) and not os.path.exists(target):
+            try:
+                os.makedirs(UPLOAD_DIR, exist_ok=True)
+                shutil.copy2(source, target)
+                print(f">>> Seeded upload: {name}")
+            except OSError as exc:
+                print(f">>> Could not seed upload {name}: {exc}")
+
+
 with app.app_context():
     init_db()
     migrate_db()
+    seed_bundled_uploads()
 
 
 if __name__ == "__main__":
