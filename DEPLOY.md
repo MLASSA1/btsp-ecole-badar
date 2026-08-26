@@ -27,6 +27,19 @@ docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest
 cd /opt/clients/btsp-ecole-badar && docker compose pull && docker compose up -d
 ```
 
+## Confirming a release actually landed
+
+Run `./verify-deploy.sh` after every deploy. It exercises the live site —
+headers, the cross-origin refusal, the brute-force cap, the pages — rather than
+comparing image digests.
+
+Digests are not enough. A deploy once reverted silently, and the check passed
+anyway: the local `:latest` tag had been replaced by the older image the server
+was running, so the comparison was that image against itself. The site looked
+correctly deployed while the security fixes were missing from it. Compare
+behaviour, or compare `docker exec btsp wc -l /app/app.py` against the file in
+this repository — never a tag against itself.
+
 ## Data
 
 `/data` holds `database.db` and `uploads/`, and survives every release — the
