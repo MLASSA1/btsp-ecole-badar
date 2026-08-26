@@ -2,9 +2,10 @@ import hashlib
 import os
 import re
 import secrets
+import time
 import shutil
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from functools import wraps
 from werkzeug.security import generate_password_hash as _generate_password_hash
 from werkzeug.security import check_password_hash
@@ -26,6 +27,10 @@ from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
 )
+from html import escape
+from html.parser import HTMLParser
+from markupsafe import Markup
+
 from translations import TRANSLATIONS, SUPPORTED_LANGS, DEFAULT_LANG
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -115,7 +120,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("BTSP_DB_PATH") or os.path.join(BASE_DIR, "database.db")
 UPLOAD_DIR = os.environ.get("BTSP_UPLOAD_DIR") or os.path.join(BASE_DIR, "uploads")
 BUNDLED_UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
+# SVG is deliberately absent: it can carry <script>, and the only thing
+# stopping that today is a CSP header on /uploads that any fronting proxy
+# could drop. Raster formats cannot execute.
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
 
 app = Flask(
@@ -134,7 +142,10 @@ def _load_secret_key():
     env = os.environ.get("SECRET_KEY")
     if env:
         return env
-    keyfile = os.path.join(BASE_DIR, ".secret_key")
+    # Next to the database, because that is the mounted volume; BASE_DIR is
+    # inside the container image and is not reliably writable, and a key
+    # that fails to persist differs per worker and logs people out at random.
+    keyfile = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), ".secret_key")
     try:
         with open(keyfile) as fh:
             saved = fh.read().strip()
@@ -149,6 +160,7 @@ def _load_secret_key():
         os.chmod(keyfile, 0o600)
     except OSError:
         print(">>> WARNING: could not persist SECRET_KEY; set the SECRET_KEY env var.")
+        print(">>> Sessions will not survive a restart and may differ between workers.")
     return generated
 
 
@@ -159,6 +171,11 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("HTTPS", "").lower() in ("1", "true", "yes")
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+# A cookie that never expires is a cookie that stays useful to whoever copies
+# it. Twelve hours covers a working day and the sliding refresh keeps active
+# staff signed in.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -753,26 +770,53 @@ def migrate_db():
 class AdminUser(UserMixin):
     """role is 'super' (everything) or 'school' (École section only)."""
 
-    def __init__(self, id, username, role="super", full_name=""):
+    def __init__(self, id, username, role="school", full_name="", stamp=None):
         self.id = id
         self.username = username
-        self.role = role or "super"
+        # Default to the *lesser* privilege. A NULL role column, an older row
+        # written before the column existed, or a caller that omits the
+        # argument used to resolve to "super" — a missing value must never
+        # grant the whole back-office.
+        self.role = role if role in ("super", "school") else "school"
         self.full_name = full_name or ""
+        self.stamp = stamp
 
     @property
     def is_super(self):
         return self.role == "super"
 
+    def get_id(self):
+        return f"{self.id}:{self.stamp}" if self.stamp else str(self.id)
+
+
+def session_stamp(password_hash):
+    """Short fingerprint of a credential, used to tie a session to it."""
+    return hashlib.sha256((password_hash or "").encode()).hexdigest()[:16]
+
 
 @login_manager.user_loader
 def load_user(user_id):
+    # The session id carries the credential fingerprint it was issued under, so
+    # changing a password invalidates every cookie already handed out — the
+    # sessions of whoever stole it included. Without this a captured cookie
+    # stayed valid forever, and a password change did nothing to stop it.
+    raw = str(user_id)
+    stamp = None
+    if ":" in raw:
+        raw, stamp = raw.split(":", 1)
+    if not raw.isdigit():
+        return None
     db = get_db()
     row = db.execute(
-        "SELECT id, username, role, full_name FROM admin_user WHERE id = ?", (user_id,)
+        "SELECT id, username, role, full_name, password_hash FROM admin_user WHERE id = ?",
+        (raw,),
     ).fetchone()
-    if row:
-        return AdminUser(row["id"], row["username"], row["role"], row["full_name"])
-    return None
+    if not row:
+        return None
+    if stamp is None or not secrets.compare_digest(stamp, session_stamp(row["password_hash"])):
+        return None
+    return AdminUser(row["id"], row["username"], row["role"], row["full_name"],
+                     stamp=stamp)
 
 
 def super_required(view):
@@ -815,6 +859,80 @@ def valid_email(value):
     return bool(EMAIL_RE.match((value or "").strip()))
 
 
+# A hash of a value nobody can supply. Verifying a password against it costs
+# the same as a real check, which is what keeps an unknown username from
+# answering faster than a known one.
+_DUMMY_HASH = generate_password_hash(secrets.token_urlsafe(32))
+
+# key -> [(timestamp, ...)] of recent failures. In-process and therefore
+# per-worker, which is the honest limit of this: it blunts credential stuffing
+# and scripted signup floods, it is not a substitute for a shared store or a
+# WAF once the site sees real traffic.
+_ATTEMPTS = {}
+_ATTEMPT_CAP = 4096
+
+
+def client_ip():
+    """Best-effort client address, trusting the proxy only one hop."""
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()[:64]
+    return (request.remote_addr or "unknown")[:64]
+
+
+def too_many_attempts(bucket, limit, window=900):
+    """True when this bucket has already failed `limit` times in `window` seconds."""
+    now = time.time()
+    hits = [t for t in _ATTEMPTS.get(bucket, ()) if now - t < window]
+    if hits:
+        _ATTEMPTS[bucket] = hits
+    else:
+        _ATTEMPTS.pop(bucket, None)
+    return len(hits) >= limit
+
+
+def record_attempt(bucket, window=900):
+    now = time.time()
+    hits = [t for t in _ATTEMPTS.get(bucket, ()) if now - t < window]
+    hits.append(now)
+    _ATTEMPTS[bucket] = hits
+    if len(_ATTEMPTS) > _ATTEMPT_CAP:
+        # Never let a flood of distinct addresses grow this without bound.
+        for key in [k for k, v in _ATTEMPTS.items() if not any(now - t < window for t in v)]:
+            _ATTEMPTS.pop(key, None)
+        if len(_ATTEMPTS) > _ATTEMPT_CAP:
+            _ATTEMPTS.clear()
+
+
+def clear_attempts(*buckets):
+    for b in buckets:
+        _ATTEMPTS.pop(b, None)
+
+
+def verify_password(row, column, password):
+    """Check a password, spending the same work when the account is absent."""
+    stored = row[column] if row else _DUMMY_HASH
+    ok = check_password_hash(stored, password)
+    return bool(row) and ok
+
+
+PASSWORD_MIN = 10
+
+
+def password_problem(password, confirm=None):
+    """Return a French error string, or None when the password is acceptable."""
+    if confirm is not None and password != confirm:
+        return "Les mots de passe ne correspondent pas."
+    if len(password) < PASSWORD_MIN:
+        return f"Le mot de passe doit contenir au moins {PASSWORD_MIN} caractères."
+    lowered = password.lower()
+    if lowered in ("motdepasse", "password", "admin123456", "azertyuiop", "1234567890"):
+        return "Ce mot de passe est trop courant."
+    if len(set(password)) < 4:
+        return "Le mot de passe est trop répétitif."
+    return None
+
+
 def form_int(name, default=0, minimum=None, maximum=None):
     """Read an integer from the form without crashing on junk.
 
@@ -842,6 +960,196 @@ def get_settings():
     db = get_db()
     rows = db.execute("SELECT key, value FROM site_settings").fetchall()
     return {row["key"]: row["value"] for row in rows}
+
+
+# --------------- Output sanitising ---------------
+#
+# Custom sections are rendered with |safe so an admin can paste an inline SVG
+# icon and a paragraph or two of formatted text. That also meant a stored
+# <script> — or an onerror= on any tag — ran for every visitor to the
+# homepage. Rather than drop the feature, keep an allowlist: anything not
+# named here is discarded, so a tag or attribute invented later is refused by
+# default instead of slipping through a denylist.
+
+ALLOWED_TAGS = {
+    "p", "br", "strong", "b", "em", "i", "u", "small", "span", "div",
+    "ul", "ol", "li", "h2", "h3", "h4", "h5", "blockquote", "a",
+    "svg", "path", "circle", "rect", "line", "polyline", "polygon", "g", "ellipse",
+}
+ALLOWED_ATTRS = {
+    "class", "href", "title", "aria-label", "aria-hidden", "role",
+    # SVG geometry and presentation
+    "viewbox", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+    "d", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "width", "height",
+    "points", "rx", "ry", "transform", "opacity", "fill-rule", "clip-rule",
+    "xmlns",
+}
+VOID_TAGS = {"br", "path", "circle", "rect", "line", "polyline", "polygon", "ellipse"}
+SAFE_URL_SCHEMES = ("http://", "https://", "mailto:", "tel:", "/", "#")
+
+
+def safe_url(value):
+    """Allow ordinary links; refuse javascript:, data: and friends."""
+    url = (value or "").strip()
+    if not url:
+        return ""
+    lowered = url.lower().replace("\t", "").replace("\n", "").replace("\r", "")
+    if lowered.startswith(SAFE_URL_SCHEMES):
+        return url
+    # A bare "example.com/x" is a relative path to the browser, which is safe;
+    # anything carrying a scheme we did not allow is not.
+    if ":" in lowered.split("/")[0]:
+        return ""
+    return url
+
+
+# Text inside these never belongs on the page, so their contents are dropped
+# rather than escaped — otherwise a stored <script>alert(1)</script> would show
+# up as the literal words on the homepage.
+DROP_CONTENT_TAGS = {"script", "style", "title", "textarea", "noscript", "iframe", "object", "embed"}
+
+
+class _Sanitiser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out = []
+        self.open_tags = []
+        self.muted = 0
+
+    def _attrs(self, tag, attrs):
+        kept = []
+        for name, value in attrs:
+            name = (name or "").lower()
+            if name not in ALLOWED_ATTRS:
+                continue          # drops every on* handler, style, srcset, ...
+            value = value or ""
+            if name == "href":
+                value = safe_url(value)
+                if not value:
+                    continue
+            kept.append(f' {name}="{escape(value, quote=True)}"')
+        return "".join(kept)
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in DROP_CONTENT_TAGS:
+            self.muted += 1
+            return
+        if self.muted or tag not in ALLOWED_TAGS:
+            return
+        self.out.append(f"<{tag}{self._attrs(tag, attrs)}>")
+        if tag not in VOID_TAGS:
+            self.open_tags.append(tag)
+
+    def handle_startendtag(self, tag, attrs):
+        tag = tag.lower()
+        if not self.muted and tag in ALLOWED_TAGS:
+            self.out.append(f"<{tag}{self._attrs(tag, attrs)}/>")
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in DROP_CONTENT_TAGS:
+            self.muted = max(0, self.muted - 1)
+            return
+        if tag in self.open_tags:
+            while self.open_tags:
+                open_tag = self.open_tags.pop()
+                self.out.append(f"</{open_tag}>")
+                if open_tag == tag:
+                    break
+
+    def handle_data(self, data):
+        if self.muted:
+            return
+        self.out.append(escape(data, quote=False))
+
+    def result(self):
+        while self.open_tags:
+            self.out.append(f"</{self.open_tags.pop()}>")
+        return "".join(self.out)
+
+
+def sanitise_html(value):
+    if not value:
+        return Markup("")
+    parser = _Sanitiser()
+    parser.feed(str(value))
+    parser.close()
+    return Markup(parser.result())
+
+
+app.jinja_env.filters["safe_html"] = sanitise_html
+app.jinja_env.filters["safe_url"] = safe_url
+
+
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+@app.before_request
+def block_cross_site_writes():
+    """Reject state-changing requests that a foreign page initiated.
+
+    SameSite=Lax was the only CSRF defence. It is a browser-side flag: older
+    browsers ignore it, and it does not cover a same-site attacker. Checking
+    the Origin the browser attaches to every cross-origin write costs nothing
+    and does not need a token in each of the forms.
+    """
+    if request.method in SAFE_METHODS:
+        return None
+    origin = request.headers.get("Origin")
+    if origin is None:
+        # No Origin header at all: a same-origin form post from an older
+        # browser, or a non-browser client. Fall back to the Referer when one
+        # is present, and allow the request when neither is.
+        referer = request.headers.get("Referer")
+        if not referer:
+            return None
+        origin = "/".join(referer.split("/")[:3])
+    allowed = {request.host_url.rstrip("/")}
+    forwarded_host = request.headers.get("X-Forwarded-Host")
+    scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+    if forwarded_host:
+        allowed.add(f"{scheme}://{forwarded_host}")
+    allowed.add(f"{scheme}://{request.host}")
+    if origin.rstrip("/") not in {a.rstrip("/") for a in allowed}:
+        abort(403)
+    return None
+
+
+@app.after_request
+def security_headers(response):
+    """Headers the whole site was missing.
+
+    Without X-Frame-Options the back-office could be framed by any page and
+    clickjacked; without nosniff a text upload can be coaxed into executing.
+    The CSP is deliberately permissive about inline styles and scripts because
+    the templates use both, and about images because programme photos are
+    loaded from Unsplash — it still stops script from an unexpected origin.
+    """
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()"
+    )
+    if app.config["SESSION_COOKIE_SECURE"]:
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
+    if "Content-Security-Policy" not in response.headers:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'self'; "
+            "form-action 'self'; "
+            "base-uri 'self'; "
+            "object-src 'none'"
+        )
+    return response
 
 
 # --------------- Public routes ---------------
@@ -1032,6 +1340,12 @@ def render_formation(formation_id, lang):
 @app.route("/api/inscription", methods=["POST"])
 def submit_inscription():
     data = request.form
+    # The honeypot stops naive bots; it does nothing against a script that
+    # simply leaves the field empty. Cap what one address can file per hour so
+    # the admin inbox and the database cannot be flooded.
+    throttle_bucket = f"inscription:{client_ip()}"
+    if too_many_attempts(throttle_bucket, 10, window=3600):
+        return jsonify({"success": False, "error": "Trop de demandes. Réessayez plus tard."}), 429
     if data.get("website", "").strip():
         # Honeypot field, invisible to humans. Answer 200 so the bot believes
         # it succeeded and does not retry, but store nothing.
@@ -1069,12 +1383,19 @@ def submit_inscription():
         ),
     )
     db.commit()
+    record_attempt(throttle_bucket, window=3600)
     return jsonify({"success": True, "message": "Votre demande a été envoyée avec succès !"})
 
 
 @app.route("/api/proposal", methods=["POST"])
 def submit_proposal():
     data = request.form
+    # The honeypot stops naive bots; it does nothing against a script that
+    # simply leaves the field empty. Cap what one address can file per hour so
+    # the admin inbox and the database cannot be flooded.
+    throttle_bucket = f"proposal:{client_ip()}"
+    if too_many_attempts(throttle_bucket, 6, window=3600):
+        return jsonify({"success": False, "error": "Trop de demandes. Réessayez plus tard."}), 429
     if data.get("website", "").strip():
         return jsonify({"success": True, "message": "OK"})
     required = ["company_name", "contact_name", "email", "phone", "training_type"]
@@ -1101,6 +1422,7 @@ def submit_proposal():
         ),
     )
     db.commit()
+    record_attempt(throttle_bucket, window=3600)
     return jsonify({"success": True, "message": "Votre demande de proposition a été envoyée !"})
 
 
@@ -1113,14 +1435,29 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+        ip_bucket = f"admin-ip:{client_ip()}"
+        user_bucket = f"admin-user:{username.lower()}"
+        # Throttle the address and the targeted account separately: one stops a
+        # single host spraying many names, the other stops a distributed run at
+        # one account.
+        if too_many_attempts(ip_bucket, 10) or too_many_attempts(user_bucket, 6):
+            flash("Trop de tentatives. Réessayez dans quelques minutes.", "error")
+            return render_template("admin/login.html"), 429
         db = get_db()
         row = db.execute(
             "SELECT id, username, password_hash, role, full_name FROM admin_user WHERE username = ?",
             (username,),
         ).fetchone()
-        if row and check_password_hash(row["password_hash"], password):
-            login_user(AdminUser(row["id"], row["username"], row["role"], row["full_name"]))
+        # verify_password hashes against a decoy when the row is missing, so an
+        # unknown username no longer answers ~290x faster than a known one.
+        if verify_password(row, "password_hash", password):
+            clear_attempts(ip_bucket, user_bucket)
+            flask_session.permanent = True
+            login_user(AdminUser(row["id"], row["username"], row["role"], row["full_name"],
+                                 stamp=session_stamp(row["password_hash"])))
             return redirect(url_for("admin_dashboard"))
+        record_attempt(ip_bucket)
+        record_attempt(user_bucket)
         flash("Identifiants incorrects.", "error")
     return render_template("admin/login.html")
 
@@ -1670,20 +2007,31 @@ def admin_settings():
         visibility_keys = ["show_hero", "show_about", "show_pillars", "show_services",
                           "show_formations", "show_online", "show_process", "show_certificates",
                           "show_gallery", "show_testimonials", "show_contact"]
-        for vk in visibility_keys:
-            value = "1" if request.form.get(f"setting_{vk}") else "0"
-            db.execute(
-                "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-                (vk, value),
-            )
-        # Handle all other text settings
-        for key in request.form:
-            if key.startswith("setting_") and key[8:] not in visibility_keys:
-                setting_key = key[8:]
+        # An unchecked box sends nothing, so this loop reads "absent" as "off".
+        # That is right for the real form and wrong for any partial POST, which
+        # would quietly switch off every section of the homepage at once. The
+        # form carries a marker field; without it, visibility is left alone.
+        if request.form.get("sections_submitted"):
+            for vk in visibility_keys:
+                value = "1" if request.form.get(f"setting_{vk}") else "0"
                 db.execute(
                     "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-                    (setting_key, request.form[key].strip()),
+                    (vk, value),
                 )
+        # Handle all other text settings. Only keys the application already
+        # knows are accepted, so a hand-crafted POST cannot invent settings or
+        # overwrite one this screen was never meant to touch.
+        known_keys = {row["key"] for row in db.execute("SELECT key FROM site_settings").fetchall()}
+        for key in request.form:
+            if not key.startswith("setting_"):
+                continue
+            setting_key = key[8:]
+            if setting_key in visibility_keys or setting_key not in known_keys:
+                continue
+            db.execute(
+                "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                (setting_key, request.form[key].strip()),
+            )
         db.commit()
         flash("Paramètres sauvegardés.", "success")
         return redirect(url_for("admin_settings"))
@@ -1704,19 +2052,24 @@ def admin_password():
         row = db.execute(
             "SELECT password_hash FROM admin_user WHERE id = ?", (current_user.id,)
         ).fetchone()
+        problem = password_problem(new_pass, confirm)
         if not check_password_hash(row["password_hash"], current):
             flash("Mot de passe actuel incorrect.", "error")
-        elif len(new_pass) < 6:
-            flash("Le nouveau mot de passe doit contenir au moins 6 caractères.", "error")
-        elif new_pass != confirm:
-            flash("Les mots de passe ne correspondent pas.", "error")
+        elif problem:
+            flash(problem, "error")
         else:
+            new_hash = generate_password_hash(new_pass)
             db.execute(
                 "UPDATE admin_user SET password_hash = ? WHERE id = ?",
-                (generate_password_hash(new_pass), current_user.id),
+                (new_hash, current_user.id),
             )
             db.commit()
-            flash("Mot de passe modifié avec succès.", "success")
+            # Every session issued under the old credential is now void — the
+            # point of changing it. Re-issue this one so the person doing the
+            # change is not thrown out of their own screen.
+            login_user(AdminUser(current_user.id, current_user.username, current_user.role,
+                                 current_user.full_name, stamp=session_stamp(new_hash)))
+            flash("Mot de passe modifié. Les autres sessions ont été déconnectées.", "success")
     return render_template("admin/password.html")
 
 
@@ -2051,18 +2404,32 @@ def student_signup():
         if not valid_email(email):
             flash("Veuillez saisir une adresse email valide.", "error")
             return render_template("student/signup.html")
-        if len(password) < 6:
-            flash("Le mot de passe doit contenir au moins 6 caractères.", "error")
+        problem = password_problem(password)
+        if problem:
+            flash(problem, "error")
             return render_template("student/signup.html")
+        # Signup is an unauthenticated write; without a cap one script can fill
+        # the students table and the reward tables hanging off it.
+        ip_bucket = f"signup-ip:{client_ip()}"
+        if too_many_attempts(ip_bucket, 5, window=3600):
+            flash("Trop de comptes créés depuis cette adresse. Réessayez plus tard.", "error")
+            return render_template("student/signup.html"), 429
         db = get_db()
-        existing = db.execute("SELECT id FROM students WHERE email = ?", (email,)).fetchone()
-        if existing:
-            flash("Cet email est déjà utilisé.", "error")
+        try:
+            db.execute(
+                "INSERT INTO students (first_name, last_name, email, password_hash, phone, avatar_letter) VALUES (?,?,?,?,?,?)",
+                (first_name, last_name, email, generate_password_hash(password), phone, first_name[0].upper()))
+            db.commit()
+        except Exception:
+            # The UNIQUE index is what actually decides, which closes the race
+            # between the old check and this insert. Saying only that the
+            # address cannot be used keeps the page from confirming to a
+            # stranger which of our students are registered.
+            db.rollback()
+            record_attempt(ip_bucket, window=3600)
+            flash("Impossible de créer un compte avec cette adresse email.", "error")
             return render_template("student/signup.html")
-        db.execute(
-            "INSERT INTO students (first_name, last_name, email, password_hash, phone, avatar_letter) VALUES (?,?,?,?,?,?)",
-            (first_name, last_name, email, generate_password_hash(password), phone, first_name[0].upper()))
-        db.commit()
+        record_attempt(ip_bucket, window=3600)
         student = db.execute("SELECT id FROM students WHERE email = ?", (email,)).fetchone()
         flask_session["student_id"] = student["id"]
         check_and_award_rewards(student["id"])
@@ -2078,12 +2445,20 @@ def student_login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        ip_bucket = f"student-ip:{client_ip()}"
+        user_bucket = f"student-user:{email}"
+        if too_many_attempts(ip_bucket, 12) or too_many_attempts(user_bucket, 6):
+            flash("Trop de tentatives. Réessayez dans quelques minutes.", "error")
+            return render_template("student/login.html"), 429
         db = get_db()
         student = db.execute("SELECT * FROM students WHERE email = ? AND active = 1", (email,)).fetchone()
-        if student and check_password_hash(student["password_hash"], password):
+        if verify_password(student, "password_hash", password):
+            clear_attempts(ip_bucket, user_bucket)
             flask_session["student_id"] = student["id"]
             check_and_award_rewards(student["id"])
             return redirect(url_for("student_dashboard"))
+        record_attempt(ip_bucket)
+        record_attempt(user_bucket)
         flash("Email ou mot de passe incorrect.", "error")
     return render_template("student/login.html")
 
@@ -2136,9 +2511,15 @@ def student_enroll(course_id):
         return redirect(url_for("student_courses"))
     existing = db.execute("SELECT id FROM student_enrollments WHERE student_id=? AND course_id=?", (g.student["id"], course_id)).fetchone()
     if not existing:
-        db.execute("INSERT INTO student_enrollments (student_id, course_id) VALUES (?,?)", (g.student["id"], course_id))
-        db.commit()
-        flash("Vous êtes inscrit au cours !", "success")
+        try:
+            db.execute("INSERT INTO student_enrollments (student_id, course_id) VALUES (?,?)", (g.student["id"], course_id))
+            db.commit()
+            flash("Vous êtes inscrit au cours !", "success")
+        except Exception:
+            # Two rapid clicks race between the check above and this insert;
+            # the unique index settles it, and being enrolled twice is not an
+            # error worth a 500 page.
+            db.rollback()
     return redirect(url_for("student_course", course_id=course_id))
 
 
@@ -2146,10 +2527,16 @@ def student_enroll(course_id):
 @student_required
 def student_course(course_id):
     db = get_db()
-    course = db.execute("SELECT * FROM courses WHERE id = ?", (course_id,)).fetchone()
+    course = db.execute("SELECT * FROM courses WHERE id = ? AND active = 1", (course_id,)).fetchone()
     if not course:
         return redirect(url_for("student_courses"))
     enrollment = db.execute("SELECT * FROM student_enrollments WHERE student_id=? AND course_id=?", (g.student["id"], course_id)).fetchone()
+    if not enrollment:
+        # The page prints course.meet_link — the private live-class URL. Reading
+        # it required nothing but a self-registered account and a course id,
+        # published or not.
+        flash("Vous devez d'abord vous inscrire à ce cours.", "error")
+        return redirect(url_for("student_courses"))
     modules = db.execute("SELECT * FROM course_modules WHERE course_id = ? ORDER BY sort_order", (course_id,)).fetchall()
     progress = {}
     for m in modules:
@@ -2463,19 +2850,29 @@ def admin_user_add():
         if not username or not password:
             flash("Nom d'utilisateur et mot de passe sont requis.", "error")
             return render_template("admin/user_form.html", user=None)
+        problem = password_problem(password)
+        if problem:
+            flash(problem, "error")
+            return render_template("admin/user_form.html", user=None)
         if db.execute("SELECT id FROM admin_user WHERE username=?", (username,)).fetchone():
             flash("Ce nom d'utilisateur existe déjà.", "error")
             return render_template("admin/user_form.html", user=None)
-        db.execute(
-            "INSERT INTO admin_user (username, password_hash, role, full_name) VALUES (?,?,?,?)",
-            (
-                username,
-                generate_password_hash(password),
-                "super" if role == "super" else "school",
-                request.form.get("full_name", "").strip(),
-            ),
-        )
-        db.commit()
+        try:
+            db.execute(
+                "INSERT INTO admin_user (username, password_hash, role, full_name) VALUES (?,?,?,?)",
+                (
+                    username,
+                    generate_password_hash(password),
+                    "super" if role == "super" else "school",
+                    request.form.get("full_name", "").strip(),
+                ),
+            )
+            db.commit()
+        except Exception:
+            # The unique index, not the check above, is what actually decides.
+            db.rollback()
+            flash("Ce nom d'utilisateur existe déjà.", "error")
+            return render_template("admin/user_form.html", user=None)
         flash("Compte créé.", "success")
         return redirect(url_for("admin_users"))
     return render_template("admin/user_form.html", user=None)
@@ -2505,6 +2902,10 @@ def admin_user_edit(id):
         )
         new_password = request.form.get("password", "")
         if new_password:
+            problem = password_problem(new_password)
+            if problem:
+                flash(problem, "error")
+                return render_template("admin/user_form.html", user=user)
             db.execute(
                 "UPDATE admin_user SET password_hash=? WHERE id=?",
                 (generate_password_hash(new_password), id),
