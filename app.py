@@ -864,12 +864,34 @@ def valid_email(value):
 # answering faster than a known one.
 _DUMMY_HASH = generate_password_hash(secrets.token_urlsafe(32))
 
-# key -> [(timestamp, ...)] of recent failures. In-process and therefore
-# per-worker, which is the honest limit of this: it blunts credential stuffing
-# and scripted signup floods, it is not a substitute for a shared store or a
-# WAF once the site sees real traffic.
+# Failure counters live in the database, not in a dict, because gunicorn runs
+# more than one worker: an in-process counter is divided by the worker count,
+# so a cap of six became twelve in production and would drift with any change
+# to --workers. The table is shared, so the limit means what it says.
 _ATTEMPTS = {}
 _ATTEMPT_CAP = 4096
+_ATTEMPT_TABLE_READY = False
+
+
+def _ensure_attempt_table(db):
+    global _ATTEMPT_TABLE_READY
+    if _ATTEMPT_TABLE_READY:
+        return True
+    try:
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS auth_attempts ("
+            "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "  bucket TEXT NOT NULL,"
+            "  ts REAL NOT NULL)"
+        )
+        db.execute("CREATE INDEX IF NOT EXISTS idx_auth_attempts_bucket ON auth_attempts (bucket, ts)")
+        db.commit()
+        _ATTEMPT_TABLE_READY = True
+        return True
+    except Exception:
+        # Fall back to the per-process dict rather than letting a logging
+        # problem stop anyone signing in.
+        return False
 
 
 def client_ip():
@@ -883,6 +905,18 @@ def client_ip():
 def too_many_attempts(bucket, limit, window=900):
     """True when this bucket has already failed `limit` times in `window` seconds."""
     now = time.time()
+    db = get_db()
+    if _ensure_attempt_table(db):
+        try:
+            db.execute("DELETE FROM auth_attempts WHERE ts < ?", (now - window,))
+            row = db.execute(
+                "SELECT COUNT(*) AS n FROM auth_attempts WHERE bucket = ? AND ts >= ?",
+                (bucket, now - window),
+            ).fetchone()
+            db.commit()
+            return (row["n"] if row else 0) >= limit
+        except Exception:
+            pass
     hits = [t for t in _ATTEMPTS.get(bucket, ()) if now - t < window]
     if hits:
         _ATTEMPTS[bucket] = hits
@@ -893,11 +927,18 @@ def too_many_attempts(bucket, limit, window=900):
 
 def record_attempt(bucket, window=900):
     now = time.time()
+    db = get_db()
+    if _ensure_attempt_table(db):
+        try:
+            db.execute("INSERT INTO auth_attempts (bucket, ts) VALUES (?, ?)", (bucket, now))
+            db.commit()
+            return
+        except Exception:
+            pass
     hits = [t for t in _ATTEMPTS.get(bucket, ()) if now - t < window]
     hits.append(now)
     _ATTEMPTS[bucket] = hits
     if len(_ATTEMPTS) > _ATTEMPT_CAP:
-        # Never let a flood of distinct addresses grow this without bound.
         for key in [k for k, v in _ATTEMPTS.items() if not any(now - t < window for t in v)]:
             _ATTEMPTS.pop(key, None)
         if len(_ATTEMPTS) > _ATTEMPT_CAP:
@@ -905,6 +946,15 @@ def record_attempt(bucket, window=900):
 
 
 def clear_attempts(*buckets):
+    """Wipe a bucket after a successful sign-in, so one good login resets it."""
+    db = get_db()
+    if _ensure_attempt_table(db):
+        try:
+            for b in buckets:
+                db.execute("DELETE FROM auth_attempts WHERE bucket = ?", (b,))
+            db.commit()
+        except Exception:
+            pass
     for b in buckets:
         _ATTEMPTS.pop(b, None)
 
