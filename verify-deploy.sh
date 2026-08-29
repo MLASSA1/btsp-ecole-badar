@@ -9,7 +9,7 @@
 # image against itself and matched perfectly while the fixes were absent.
 
 set -u
-SITE="${1:-https://ecole-badar.visionxart.com}"
+SITE="${1:-https://btspformation.com}"
 fails=0
 
 check() {           # check <description> <actual> <expected>

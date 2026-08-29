@@ -1,6 +1,7 @@
 # Deployment
 
-The site runs at <https://ecole-badar.visionxart.com> on the visionxart VPS,
+The site runs at <https://btspformation.com> on the visionxart VPS
+(the older ecole-badar.visionxart.com now redirects there),
 as a Docker container behind the nginx that already fronts the other sites on
 that machine. There is no systemd service and no PostgreSQL: the app keeps its
 SQLite database and uploaded media on a Docker volume.
