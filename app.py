@@ -1525,10 +1525,10 @@ def logout():
 @login_required
 def admin_dashboard():
     db = get_db()
+    today = date.today()
 
     # School staff get a school dashboard; they never see site-content counters.
     if not current_user.is_super:
-        today = date.today()
         pupils = db.execute("SELECT COUNT(*) FROM class_students WHERE active=1").fetchone()[0]
         paid = db.execute(
             "SELECT COUNT(*) FROM payments WHERE year=? AND month=? AND status='paid'",
@@ -1574,10 +1574,74 @@ def admin_dashboard():
         "inscriptions_total": db.execute("SELECT COUNT(*) FROM inscriptions").fetchone()[0],
         "gallery": db.execute("SELECT COUNT(*) FROM gallery WHERE active=1").fetchone()[0],
     }
+
+    # The directeur's dashboard listed only website counters — nothing about the
+    # school itself, which is the part that actually needs watching. Pupils,
+    # classes, teachers and this month's money now sit alongside it.
+    pupils = db.execute("SELECT COUNT(*) FROM class_students WHERE active=1").fetchone()[0]
+    paid_rows = db.execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM payments "
+        "WHERE year=? AND month=? AND status='paid'",
+        (today.year, today.month),
+    ).fetchone()
+    expected = db.execute(
+        """SELECT COALESCE(SUM(COALESCE(NULLIF(s.monthly_fee, 0), c.monthly_fee, 0)), 0)
+             FROM class_students s
+             LEFT JOIN school_classes c ON s.class_id = c.id
+            WHERE s.active = 1"""
+    ).fetchone()[0]
+    collected = paid_rows["total"] or 0
+    year_total = db.execute(
+        "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE year=? AND status='paid'",
+        (today.year,),
+    ).fetchone()[0]
+    stats.update({
+        "pupils": pupils,
+        "classes": db.execute("SELECT COUNT(*) FROM school_classes WHERE active=1").fetchone()[0],
+        "teachers": db.execute("SELECT COUNT(*) FROM teachers WHERE active=1").fetchone()[0],
+        "paid": paid_rows["n"],
+        "unpaid": max(pupils - paid_rows["n"], 0),
+        "collected": collected,
+        "expected": expected or 0,
+        "outstanding": max((expected or 0) - collected, 0),
+        "collection_rate": round(collected * 100 / expected) if expected else 0,
+        "year_total": year_total or 0,
+        "students_online": db.execute("SELECT COUNT(*) FROM students WHERE active=1").fetchone()[0],
+        "courses": db.execute("SELECT COUNT(*) FROM courses WHERE active=1").fetchone()[0],
+        "enrollments": db.execute("SELECT COUNT(*) FROM student_enrollments").fetchone()[0],
+        "month_label": MONTHS_FR[today.month - 1],
+        "year": today.year,
+    })
+
+    # Which classes are behind on payment this month, worst first.
+    class_rows = db.execute(
+        """SELECT c.id, c.name,
+                  COUNT(s.id) AS pupils,
+                  SUM(CASE WHEN p.status = 'paid' THEN 1 ELSE 0 END) AS paid,
+                  COALESCE(SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END), 0) AS collected
+             FROM school_classes c
+             LEFT JOIN class_students s ON s.class_id = c.id AND s.active = 1
+             LEFT JOIN payments p ON p.student_id = s.id AND p.year = ? AND p.month = ?
+            WHERE c.active = 1
+            GROUP BY c.id, c.name
+            ORDER BY c.name""",
+        (today.year, today.month),
+    ).fetchall()
+    class_summary = []
+    for row in class_rows:
+        total = row["pupils"] or 0
+        done = row["paid"] or 0
+        class_summary.append({
+            "id": row["id"], "name": row["name"], "pupils": total, "paid": done,
+            "unpaid": max(total - done, 0), "collected": row["collected"] or 0,
+            "rate": round(done * 100 / total) if total else 0,
+        })
+
     recent_inscriptions = db.execute(
         "SELECT * FROM inscriptions ORDER BY created_at DESC LIMIT 5"
     ).fetchall()
-    return render_template("admin/dashboard.html", stats=stats, recent=recent_inscriptions)
+    return render_template("admin/dashboard.html", stats=stats, recent=recent_inscriptions,
+                           class_summary=class_summary)
 
 
 # --------------- Admin: Formations CRUD ---------------
@@ -3376,6 +3440,32 @@ def admin_payments():
     total_collected = sum((p["row"]["paid_amount"] or 0) for p in pupils if p["paid"])
     paid_count = sum(1 for p in pupils if p["paid"])
 
+    # A strip of the whole year, so it is obvious which month is on screen and
+    # how it compares. The table below always lists every pupil — that is the
+    # point of the page, seeing who has not paid — so without this the screen
+    # looks the same whichever month is chosen.
+    per_month = {
+        row["month"]: row["total"]
+        for row in db.execute(
+            "SELECT month, COALESCE(SUM(amount), 0) AS total FROM payments "
+            "WHERE year = ? AND status = 'paid' GROUP BY month",
+            (year,),
+        ).fetchall()
+    }
+    peak = max(per_month.values()) if per_month else 0
+    month_overview = [
+        {
+            "month": m,
+            "label": MONTHS_FR[m - 1],
+            "short": MONTHS_FR[m - 1][:3],
+            "total": per_month.get(m, 0),
+            "height": round((per_month.get(m, 0) / peak) * 100) if peak else 0,
+            "current": m == month,
+        }
+        for m in range(1, 13)
+    ]
+    year_total = sum(per_month.values())
+
     return render_template(
         "admin/payments.html",
         pupils=pupils,
@@ -3390,6 +3480,9 @@ def admin_payments():
         total_collected=total_collected,
         paid_count=paid_count,
         unpaid_count=len(pupils) - paid_count,
+        month_overview=month_overview,
+        year_total=year_total,
+        collection_rate=round(total_collected * 100 / total_due) if total_due else 0,
     )
 
 

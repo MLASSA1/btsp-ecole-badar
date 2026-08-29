@@ -34,6 +34,100 @@
   </div>
 </div>
 
+<!-- The school itself: pupils, money and who is behind. The counters above
+     describe the website; these describe the establishment. -->
+<div class="section-title">L'École — {{ stats.month_label }} {{ stats.year }}</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ stats.pupils }}</div>
+      <div class="stat-label">Élèves inscrits</div>
+      <div class="stat-note">{{ stats.classes }} classe{{ 's' if stats.classes != 1 }} · {{ stats.teachers }} enseignant{{ 's' if stats.teachers != 1 }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ stats.paid }} <span class="stat-of">/ {{ stats.pupils }}</span></div>
+      <div class="stat-label">Ont payé ce mois</div>
+      <div class="stat-note">{{ stats.collection_rate }} % du montant attendu</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(stats.collected) }}</div>
+      <div class="stat-label">MAD encaissés ce mois</div>
+      <div class="stat-note">{{ '%.0f'|format(stats.year_total) }} MAD depuis janvier</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(stats.outstanding) }}</div>
+      <div class="stat-label">MAD restants</div>
+      <div class="stat-note">{{ stats.unpaid }} élève{{ 's' if stats.unpaid != 1 }} en attente</div>
+    </div>
+  </div>
+</div>
+
+{% if class_summary %}
+<div class="card">
+  <div class="card-header">
+    <span>Paiements par classe — {{ stats.month_label }} {{ stats.year }}</span>
+    <a href="{{ url_for('admin_payments') }}" class="btn btn-sm">Gérer les paiements</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Classe</th><th>Élèves</th><th>Payé</th><th>En attente</th><th>Encaissé</th><th>Taux</th></tr>
+      </thead>
+      <tbody>
+        {% for c in class_summary %}
+        <tr>
+          <td><a href="{{ url_for('admin_class_detail', id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+          <td>{{ c.pupils }}</td>
+          <td>{{ c.paid }}</td>
+          <td>{% if c.unpaid %}<span class="badge badge-danger">{{ c.unpaid }}</span>{% else %}<span class="badge badge-success">0</span>{% endif %}</td>
+          <td>{{ '%.0f'|format(c.collected) }} MAD</td>
+          <td style="min-width:120px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:6px;background:var(--surface-3);border-radius:999px;overflow:hidden">
+                <div style="width:{{ c.rate }}%;height:100%;background:var(--success)"></div>
+              </div>
+              <span class="text-sm text-muted">{{ c.rate }} %</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="section-title">Espace en ligne</div>
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-info">
+    <div class="stat-value">{{ stats.students_online }}</div><div class="stat-label">Étudiants en ligne</div></div></div>
+  <div class="stat-card"><div class="stat-info">
+    <div class="stat-value">{{ stats.courses }}</div><div class="stat-label">Cours publiés</div></div></div>
+  <div class="stat-card"><div class="stat-info">
+    <div class="stat-value">{{ stats.enrollments }}</div><div class="stat-label">Inscriptions aux cours</div></div></div>
+  <div class="stat-card"><div class="stat-info">
+    <div class="stat-value">{{ stats.inscriptions_total }}</div><div class="stat-label">Demandes reçues</div>
+    <div class="stat-note">{{ stats.inscriptions_new }} nouvelle{{ 's' if stats.inscriptions_new != 1 }}</div></div></div>
+</div>
+
 <!-- Recent inscriptions -->
 <div class="card">
   <div class="card-header">

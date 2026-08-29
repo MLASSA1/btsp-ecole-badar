@@ -710,3 +710,52 @@ td form.flex { flex-wrap: wrap; }
   input, select, textarea,
   .form-group input, .form-group select, .form-group textarea { font-size: 16px; }
 }
+
+/* ---------- Year-at-a-glance strip on the payments board ---------- */
+.month-strip {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px;
+  align-items: end;
+}
+.month-col {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 2px; border-radius: 12px;
+  text-decoration: none; transition: background var(--transition);
+}
+.month-col:hover { background: var(--surface-2); }
+.month-col.is-current { background: var(--blue-100); }
+.month-bar-track {
+  width: 100%; max-width: 34px; height: 84px;
+  display: flex; align-items: flex-end;
+  background: var(--surface-2); border-radius: 8px; overflow: hidden;
+}
+.month-bar {
+  width: 100%; border-radius: 8px;
+  background: linear-gradient(180deg, var(--blue-500), var(--blue-700));
+  transition: height var(--transition);
+}
+.month-col.is-current .month-bar { background: linear-gradient(180deg, var(--red-400), var(--red-600)); }
+.month-name {
+  font-size: 0.72rem; font-weight: 700; color: var(--ink-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.month-col.is-current .month-name { color: var(--blue-700); }
+.month-amount { font-size: 0.7rem; color: var(--ink-muted); }
+
+@media (max-width: 680px) {
+  /* Twelve columns do not fit a phone; scroll the strip instead of crushing it. */
+  .month-strip {
+    grid-template-columns: repeat(12, 56px);
+    overflow-x: auto; padding-bottom: 8px;
+  }
+  .month-amount { display: none; }
+}
+
+/* Supporting line under a figure — must sit below it, not beside it, because
+   .stat-card is a flex row and a bare sibling became a third column. */
+.stat-note {
+  font-size: 0.76rem;
+  color: var(--ink-muted);
+  margin-top: 6px;
+  line-height: 1.35;
+}
+.stat-of { font-size: 1rem; font-weight: 600; color: var(--ink-muted); }

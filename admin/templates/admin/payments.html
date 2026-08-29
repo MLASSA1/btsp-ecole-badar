@@ -45,25 +45,49 @@
 
 <div class="card">
   <div class="card-header">
-    <span>Suivi du mois</span>
+    <span>Année {{ year }} — encaissé par mois</span>
+    <span class="text-sm text-muted">{{ '%.0f'|format(year_total) }} MAD au total</span>
+  </div>
+  <div class="card-body">
+    {# The pupil list below shows every pupil whichever month is selected, so
+       without this it is hard to tell the month even changed. #}
+    <div class="month-strip">
+      {% for m in month_overview %}
+      <a href="{{ url_for('admin_payments', year=year, month=m.month, class_id=class_filter or None, status=status_filter or None) }}"
+         class="month-col{% if m.current %} is-current{% endif %}"
+         title="{{ m.label }} : {{ '%.0f'|format(m.total) }} MAD">
+        <span class="month-bar-track">
+          <span class="month-bar" style="height:{{ m.height if m.height > 0 else 2 }}%"></span>
+        </span>
+        <span class="month-name">{{ m.short }}</span>
+        <span class="month-amount">{{ '%.0f'|format(m.total) }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span>Suivi de {{ months[month - 1] }} {{ year }}</span>
     <form method="GET" class="flex gap-2 items-center">
-      <select name="month" style="width:auto;padding:8px 12px">
+      <select name="month" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
         {% for m in months %}
         <option value="{{ loop.index }}" {% if loop.index == month %}selected{% endif %}>{{ m }}</option>
         {% endfor %}
       </select>
-      <select name="year" style="width:auto;padding:8px 12px">
+      <select name="year" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
         {% for y in years %}
         <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
-      <select name="class_id" style="width:auto;padding:8px 12px">
+      <select name="class_id" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
         <option value="">Toutes les classes</option>
         {% for c in classes %}
         <option value="{{ c.id }}" {% if class_filter == c.id %}selected{% endif %}>{{ c.name }}</option>
         {% endfor %}
       </select>
-      <select name="status" style="width:auto;padding:8px 12px">
+      <select name="status" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
         <option value="">Tous</option>
         <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Ont payé</option>
         <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>N'ont pas payé</option>
