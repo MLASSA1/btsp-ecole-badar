@@ -759,3 +759,19 @@ td form.flex { flex-wrap: wrap; }
   line-height: 1.35;
 }
 .stat-of { font-size: 1rem; font-weight: 600; color: var(--ink-muted); }
+
+/* Says out loud that a month has no payments yet. Without it the board looks
+   identical for every unpaid month, which reads as a filter that did nothing. */
+.month-empty, .month-note {
+  margin: 0 26px 18px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.month-empty { background: var(--warning-light); color: var(--warning); border: 1px solid rgba(169,106,11,0.18); }
+.month-note  { background: var(--surface-2); color: var(--ink-muted); }
+
+@media (max-width: 680px) {
+  .month-empty, .month-note { margin: 0 20px 14px; }
+}

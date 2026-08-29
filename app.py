@@ -983,6 +983,25 @@ def password_problem(password, confirm=None):
     return None
 
 
+def enrolled_by(enrolled_on, year, month):
+    """Was this pupil already enrolled during the given month?
+
+    Dates are entered by hand and the column holds empty strings and typos
+    ("0025-11-01"), so anything that will not parse counts as enrolled.
+    """
+    text = (enrolled_on or "").strip()
+    if len(text) < 7:
+        return True
+    try:
+        enrolled_year = int(text[:4])
+        enrolled_month = int(text[5:7])
+    except ValueError:
+        return True
+    if not (1900 <= enrolled_year <= 2200) or not (1 <= enrolled_month <= 12):
+        return True
+    return (year, month) >= (enrolled_year, enrolled_month)
+
+
 def form_int(name, default=0, minimum=None, maximum=None):
     """Read an integer from the form without crashing on junk.
 
@@ -1224,6 +1243,26 @@ def static_site(filename):
     if filename not in PUBLIC_ASSETS:
         abort(404)
     return send_from_directory(BASE_DIR, filename)
+
+
+@app.context_processor
+def asset_version():
+    """A cache-busting stamp for the stylesheets.
+
+    The templates ship inside the image and change with every release, but the
+    browser kept its copy of the CSS: after one deploy the new markup was
+    styled by the old stylesheet, so the payments year-strip rendered as a row
+    of plain text. Appending the file's modification time makes each release a
+    new URL, so a stale stylesheet cannot outlive the HTML that needs it.
+    """
+    def asset(filename):
+        path = os.path.join(BASE_DIR, filename)
+        try:
+            stamp = int(os.path.getmtime(path))
+        except OSError:
+            stamp = 0
+        return f"/static-site/{filename}?v={stamp}"
+    return {"asset": asset}
 
 
 @app.route("/")
@@ -3056,6 +3095,13 @@ MONTHS_FR = [
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ]
 
+# Truncating to three letters turns both Juin and Juillet into "Jui", so the
+# year strip showed the same label twice.
+MONTHS_FR_SHORT = [
+    "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+    "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
+]
+
 
 def _teacher_form():
     return (
@@ -3408,6 +3454,7 @@ def admin_payments():
     status_filter = request.args.get("status", "")
 
     sql = """SELECT s.id, s.first_name, s.last_name, s.phone, s.monthly_fee AS student_fee,
+                    s.enrolled_on,
                     c.id AS class_id, c.name AS class_name, c.monthly_fee AS class_fee,
                     t.first_name AS teacher_first, t.last_name AS teacher_last,
                     p.status, p.amount AS paid_amount, p.paid_on, p.method
@@ -3427,9 +3474,18 @@ def admin_payments():
 
     # A pupil's own fee overrides the class fee when it is set.
     pupils = []
+    skipped_before_enrolment = 0
     for r in rows:
         due = r["student_fee"] or r["class_fee"] or 0
         paid = r["status"] == "paid"
+        # Nobody owes for a month that ended before they joined the school. The
+        # date is typed by hand, so anything unreadable means "show them" — a
+        # pupil quietly vanishing from the board is far worse than one shown a
+        # month early. A recorded payment always wins: hiding one would take
+        # real money off the totals.
+        if not paid and not enrolled_by(r["enrolled_on"], year, month):
+            skipped_before_enrolment += 1
+            continue
         if status_filter == "paid" and not paid:
             continue
         if status_filter == "unpaid" and paid:
@@ -3457,7 +3513,7 @@ def admin_payments():
         {
             "month": m,
             "label": MONTHS_FR[m - 1],
-            "short": MONTHS_FR[m - 1][:3],
+            "short": MONTHS_FR_SHORT[m - 1],
             "total": per_month.get(m, 0),
             "height": round((per_month.get(m, 0) / peak) * 100) if peak else 0,
             "current": m == month,
@@ -3482,6 +3538,7 @@ def admin_payments():
         unpaid_count=len(pupils) - paid_count,
         month_overview=month_overview,
         year_total=year_total,
+        skipped_before_enrolment=skipped_before_enrolment,
         collection_rate=round(total_collected * 100 / total_due) if total_due else 0,
     )
 

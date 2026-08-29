@@ -96,6 +96,20 @@
     </form>
   </div>
 
+  {% if paid_count == 0 %}
+  <div class="month-empty">
+    Aucun paiement enregistré pour {{ months[month - 1] }} {{ year }}.
+    Les {{ pupils|length }} élève{{ 's' if pupils|length != 1 }} ci-dessous
+    {{ 'sont' if pupils|length != 1 else 'est' }} en attente de règlement pour ce mois.
+  </div>
+  {% endif %}
+  {% if skipped_before_enrolment %}
+  <div class="month-note">
+    {{ skipped_before_enrolment }} élève{{ 's' if skipped_before_enrolment != 1 }}
+    non affiché{{ 's' if skipped_before_enrolment != 1 }} : inscrit{{ 's' if skipped_before_enrolment != 1 }}
+    après {{ months[month - 1] }} {{ year }}.
+  </div>
+  {% endif %}
   <div class="table-wrap">
     <table>
       <thead>
