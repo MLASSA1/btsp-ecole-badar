@@ -87,13 +87,26 @@
         <option value="{{ c.id }}" {% if class_filter == c.id %}selected{% endif %}>{{ c.name }}</option>
         {% endfor %}
       </select>
-      <select name="status" onchange="this.form.submit()" style="width:auto;padding:8px 12px">
-        <option value="">Tous</option>
-        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Ont payé</option>
-        <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>N'ont pas payé</option>
-      </select>
       <button type="submit" class="btn btn-sm btn-primary">Afficher</button>
     </form>
+  </div>
+
+  <div class="pay-tabs">
+    {# Separating those who paid from those who have not is the daily question
+       this page answers, so it is a row of buttons rather than a value hidden
+       in a dropdown. The counts come from the whole month, not the filter. #}
+    <a href="{{ url_for('admin_payments', year=year, month=month, class_id=class_filter or None) }}"
+       class="pay-tab{% if not status_filter %} is-active{% endif %}">
+      Tous <span class="pay-tab-count">{{ tab_counts[''] }}</span>
+    </a>
+    <a href="{{ url_for('admin_payments', year=year, month=month, class_id=class_filter or None, status='paid') }}"
+       class="pay-tab pay-tab-paid{% if status_filter == 'paid' %} is-active{% endif %}">
+      Ont payé <span class="pay-tab-count">{{ tab_counts['paid'] }}</span>
+    </a>
+    <a href="{{ url_for('admin_payments', year=year, month=month, class_id=class_filter or None, status='unpaid') }}"
+       class="pay-tab pay-tab-unpaid{% if status_filter == 'unpaid' %} is-active{% endif %}">
+      N'ont pas payé <span class="pay-tab-count">{{ tab_counts['unpaid'] }}</span>
+    </a>
   </div>
 
   {% if paid_count == 0 %}
@@ -155,15 +168,27 @@
               <input type="hidden" name="month" value="{{ month }}">
               <input type="hidden" name="class_id_filter" value="{{ class_filter or '' }}">
               <input type="hidden" name="status_filter" value="{{ status_filter or '' }}">
+              {# A family that pays late should be recorded on the day the money
+                 arrived, not the day it was keyed in, so the date is editable
+                 in both states and follows through to the receipt. #}
               {% if p.paid %}
-                <input type="hidden" name="action" value="unpaid">
+                <input type="hidden" name="action" value="paid">
+                <input type="number" name="amount" value="{{ '%.0f'|format(p.row.paid_amount or p.due) }}"
+                       min="0" step="50" style="width:92px;padding:8px 10px" aria-label="Montant">
+                <input type="date" name="paid_on" value="{{ p.row.paid_on or today }}"
+                       style="width:148px;padding:8px 10px" aria-label="Date de paiement">
+                <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
                 <a href="{{ url_for('admin_payment_receipt', student_id=s.id, year=year, month=month) }}"
-                   class="btn btn-sm btn-primary" target="_blank" rel="noopener">Reçu</a>
-                <button type="submit" class="btn btn-sm">Annuler</button>
+                   class="btn btn-sm" target="_blank" rel="noopener">Reçu</a>
+                {# A second field named "action" would lose to the hidden one above,
+                   because only the first value is read. Use its own name. #}
+                <button type="submit" name="cancel_payment" value="1" class="btn btn-sm">Annuler</button>
               {% else %}
                 <input type="hidden" name="action" value="paid">
                 <input type="number" name="amount" value="{{ '%.0f'|format(p.due) }}" min="0" step="50"
-                       style="width:100px;padding:8px 10px" aria-label="Montant">
+                       style="width:92px;padding:8px 10px" aria-label="Montant">
+                <input type="date" name="paid_on" value="{{ today }}"
+                       style="width:148px;padding:8px 10px" aria-label="Date de paiement">
                 <button type="submit" class="btn btn-sm btn-success">Payé</button>
               {% endif %}
             </form>

@@ -5,7 +5,7 @@ import secrets
 import time
 import shutil
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from werkzeug.security import generate_password_hash as _generate_password_hash
 from werkzeug.security import check_password_hash
@@ -981,6 +981,24 @@ def password_problem(password, confirm=None):
     if len(set(password)) < 4:
         return "Le mot de passe est trop répétitif."
     return None
+
+
+def clean_pay_date(value, fallback=None):
+    """Accept a hand-typed YYYY-MM-DD, or fall back.
+
+    The field exists so a late payment can carry the day it actually arrived
+    rather than the day it was keyed in. It reaches the receipt, so a typo
+    would print on something handed to a family.
+    """
+    text = (value or "").strip()
+    if text:
+        try:
+            parsed = datetime.strptime(text, "%Y-%m-%d").date()
+        except ValueError:
+            parsed = None
+        if parsed and 2000 <= parsed.year <= 2100:
+            return parsed.isoformat()
+    return fallback or date.today().isoformat()
 
 
 def enrolled_by(enrolled_on, year, month):
@@ -3473,7 +3491,11 @@ def admin_payments():
     rows = db.execute(sql, tuple(params)).fetchall()
 
     # A pupil's own fee overrides the class fee when it is set.
-    pupils = []
+    # Build the month's full list first. The counters and the totals describe
+    # the whole month, so they must not change when the list below is narrowed
+    # to one group — a filtered view that also rewrites the totals tells you
+    # the month collected less than it did.
+    everyone = []
     skipped_before_enrolment = 0
     for r in rows:
         due = r["student_fee"] or r["class_fee"] or 0
@@ -3486,15 +3508,23 @@ def admin_payments():
         if not paid and not enrolled_by(r["enrolled_on"], year, month):
             skipped_before_enrolment += 1
             continue
-        if status_filter == "paid" and not paid:
-            continue
-        if status_filter == "unpaid" and paid:
-            continue
-        pupils.append({"row": r, "due": due, "paid": paid})
+        everyone.append({"row": r, "due": due, "paid": paid})
 
-    total_due = sum(p["due"] for p in pupils)
-    total_collected = sum((p["row"]["paid_amount"] or 0) for p in pupils if p["paid"])
-    paid_count = sum(1 for p in pupils if p["paid"])
+    total_due = sum(p["due"] for p in everyone)
+    total_collected = sum((p["row"]["paid_amount"] or 0) for p in everyone if p["paid"])
+    paid_count = sum(1 for p in everyone if p["paid"])
+    tab_counts = {
+        "": len(everyone),
+        "paid": paid_count,
+        "unpaid": len(everyone) - paid_count,
+    }
+
+    if status_filter == "paid":
+        pupils = [p for p in everyone if p["paid"]]
+    elif status_filter == "unpaid":
+        pupils = [p for p in everyone if not p["paid"]]
+    else:
+        pupils = everyone
 
     # A strip of the whole year, so it is obvious which month is on screen and
     # how it compares. The table below always lists every pupil — that is the
@@ -3535,7 +3565,9 @@ def admin_payments():
         total_due=total_due,
         total_collected=total_collected,
         paid_count=paid_count,
-        unpaid_count=len(pupils) - paid_count,
+        unpaid_count=len(everyone) - paid_count,
+        tab_counts=tab_counts,
+        today=date.today().isoformat(),
         month_overview=month_overview,
         year_total=year_total,
         skipped_before_enrolment=skipped_before_enrolment,
@@ -3591,6 +3623,10 @@ def admin_payment_mark():
     year = request.form.get("year", type=int)
     month = request.form.get("month", type=int)
     action = request.form.get("action", "paid")
+    # The row form posts action=paid and carries a separate cancel button, so a
+    # click on "Annuler" is not lost behind the hidden field.
+    if request.form.get("cancel_payment"):
+        action = "unpaid"
 
     if not (student_id and year and month):
         abort(400)
@@ -3636,7 +3672,7 @@ def admin_payment_mark():
                 amount,
                 "paid",
                 request.form.get("method", "").strip(),
-                request.form.get("paid_on", "").strip() or date.today().isoformat(),
+                clean_pay_date(request.form.get("paid_on")),
             ),
         )
     db.commit()
