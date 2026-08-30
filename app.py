@@ -572,8 +572,10 @@ def init_db():
         "phone_2": "06.50.51.58.44",
         "email": "contact@btsp.ma",
         "hours": "Lun - Sam : 08h00 - 18h00",
-        "facebook_url": "#",
-        "instagram_url": "#",
+        "facebook_url": "https://www.facebook.com/share/186kCgPFna/",
+        "instagram_url": "https://www.instagram.com/formation.btsp",
+        "tiktok_url": "https://www.tiktok.com/@btsp.formation",
+        "google_url": "https://share.google/4AnTsCtmSN1kl9ON4",
         "whatsapp_url": "https://wa.me/212637486276",
         "stat_diplomes": "500+",
         "stat_formations": "15+",
@@ -3753,6 +3755,48 @@ FORMATION_IMAGES = {
 }
 
 
+# The school's own diploma artwork, and where its social accounts live. Both
+# are seeded rather than left to a manual edit, so a fresh install is complete
+# and an existing one picks up a change without anybody retyping a URL.
+DIPLOMA_IMAGE = "/uploads/diplome-btsp.jpg"
+RETIRED_DIPLOMA_IMAGES = {"/uploads/diplome-specimen-btsp.jpg"}
+SOCIAL_DEFAULTS = {
+    "facebook_url": "https://www.facebook.com/share/186kCgPFna/",
+    "instagram_url": "https://www.instagram.com/formation.btsp",
+    "tiktok_url": "https://www.tiktok.com/@btsp.formation",
+    "google_url": "https://share.google/4AnTsCtmSN1kl9ON4",
+}
+
+
+def seed_school_links():
+    """Point at the current diploma artwork and fill in missing social links.
+
+    Only blanks and superseded values are touched: a URL the admin has typed,
+    or a diploma they uploaded themselves, is left exactly as it is.
+    """
+    db = get_db()
+    current = db.execute(
+        "SELECT value FROM site_settings WHERE key = 'cert_specimen_image'"
+    ).fetchone()
+    value = (current["value"] if current else "") or ""
+    if not value or value in RETIRED_DIPLOMA_IMAGES:
+        db.execute(
+            "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            ("cert_specimen_image", DIPLOMA_IMAGE),
+        )
+    for key, url in SOCIAL_DEFAULTS.items():
+        row = db.execute("SELECT value FROM site_settings WHERE key = ?", (key,)).fetchone()
+        existing = (row["value"] if row else "") or ""
+        if existing.strip() in ("", "#"):
+            db.execute(
+                "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                (key, url),
+            )
+    db.commit()
+
+
 def seed_formation_images():
     """Fill in the stock photo for programmes that have none."""
     db = get_db()
@@ -3807,6 +3851,7 @@ with app.app_context():
     migrate_db()
     seed_bundled_uploads()
     seed_formation_images()
+    seed_school_links()
 
 
 if __name__ == "__main__":

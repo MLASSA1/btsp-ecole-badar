@@ -6,6 +6,7 @@ database.db-wal
 uploads/*
 # The diploma specimen ships with the site, unlike admin-uploaded media.
 !uploads/diplome-specimen-btsp.jpg
+!uploads/diplome-btsp.jpg
 .env
 .secret_key
 *.pem
