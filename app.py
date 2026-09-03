@@ -1242,6 +1242,13 @@ def security_headers(response):
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
         )
+    # Pages carry no cache validator, so a browser is free to keep serving an
+    # old copy: a programme taken off the site kept appearing for the person
+    # who had visited it before. Ask for revalidation on HTML only — uploads
+    # and the versioned stylesheets should still be cached hard.
+    if response.mimetype == "text/html":
+        response.headers.setdefault("Cache-Control", "no-cache, must-revalidate")
+
     if "Content-Security-Policy" not in response.headers:
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
