@@ -3779,6 +3779,39 @@ def _short_class_form():
 @login_required
 def admin_short_courses():
     db = get_db()
+
+    # Filters. Everything below — the table and the four totals above it — is
+    # computed from the filtered set, so "combien pour cette formation" is one
+    # selection rather than a calculation done by hand.
+    formation_filter = request.args.get("formation_id", type=int)
+    duration_filter = (request.args.get("duration") or "").strip()
+    teacher_filter = request.args.get("teacher_id", type=int)
+    status_filter = (request.args.get("status") or "").strip()
+    price_min = request.args.get("price_min", type=float)
+    price_max = request.args.get("price_max", type=float)
+
+    where = ["c.kind = 'short'"]
+    params = []
+    if formation_filter:
+        where.append("c.formation_id = ?")
+        params.append(formation_filter)
+    if duration_filter:
+        where.append("c.duration_label = ?")
+        params.append(duration_filter)
+    if teacher_filter:
+        where.append("c.teacher_id = ?")
+        params.append(teacher_filter)
+    if status_filter == "active":
+        where.append("c.active = 1")
+    elif status_filter == "archived":
+        where.append("c.active = 0")
+    if price_min is not None and price_min == price_min:
+        where.append("COALESCE(c.price, 0) >= ?")
+        params.append(price_min)
+    if price_max is not None and price_max == price_max:
+        where.append("COALESCE(c.price, 0) <= ?")
+        params.append(price_max)
+
     courses = db.execute(
         """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
                   f.title AS formation_title,
@@ -3796,8 +3829,9 @@ def admin_short_courses():
              FROM school_classes c
              LEFT JOIN teachers t ON c.teacher_id = t.id
              LEFT JOIN formations f ON c.formation_id = f.id
-            WHERE c.kind = 'short'
-            ORDER BY c.active DESC, c.start_date DESC, c.name"""
+            WHERE """ + " AND ".join(where) + """
+            ORDER BY c.active DESC, c.start_date DESC, c.name""",
+        tuple(params),
     ).fetchall()
     rows = []
     for c in courses:
@@ -3808,9 +3842,53 @@ def admin_short_courses():
             "collected": c["collected"] or 0,
             "outstanding": max(expected - (c["collected"] or 0), 0),
         })
-    return render_template("admin/short_courses.html", courses=rows,
-                           total_collected=sum(r["collected"] for r in rows),
-                           total_expected=sum(r["expected"] for r in rows))
+    # The dropdowns only offer values that exist among short courses, so a
+    # filter can never come back empty for a formation nobody ever ran.
+    used_formations = db.execute(
+        """SELECT DISTINCT f.id, f.title
+             FROM school_classes c JOIN formations f ON f.id = c.formation_id
+            WHERE c.kind = 'short'
+            ORDER BY f.title"""
+    ).fetchall()
+    used_durations = [
+        r["duration_label"] for r in db.execute(
+            """SELECT DISTINCT duration_label FROM school_classes
+                WHERE kind = 'short' AND COALESCE(duration_label, '') <> ''
+                ORDER BY duration_label"""
+        ).fetchall()
+    ]
+    used_teachers = db.execute(
+        """SELECT DISTINCT t.id, t.first_name, t.last_name
+             FROM school_classes c JOIN teachers t ON t.id = c.teacher_id
+            WHERE c.kind = 'short'
+            ORDER BY t.last_name, t.first_name"""
+    ).fetchall()
+    price_bounds = db.execute(
+        "SELECT MIN(COALESCE(price, 0)), MAX(COALESCE(price, 0)) FROM school_classes WHERE kind = 'short'"
+    ).fetchone()
+
+    total_expected = sum(r["expected"] for r in rows)
+    total_collected = sum(r["collected"] for r in rows)
+    return render_template(
+        "admin/short_courses.html", courses=rows,
+        total_collected=total_collected,
+        total_expected=total_expected,
+        total_outstanding=max(total_expected - total_collected, 0),
+        total_participants=sum(r["row"]["participants"] or 0 for r in rows),
+        used_formations=used_formations,
+        used_durations=used_durations,
+        used_teachers=used_teachers,
+        price_floor=(price_bounds[0] or 0) if price_bounds else 0,
+        price_ceiling=(price_bounds[1] or 0) if price_bounds else 0,
+        formation_filter=formation_filter,
+        duration_filter=duration_filter,
+        teacher_filter=teacher_filter,
+        status_filter=status_filter,
+        price_min=price_min,
+        price_max=price_max,
+        filters_active=any([formation_filter, duration_filter, teacher_filter,
+                            status_filter, price_min is not None, price_max is not None]),
+    )
 
 
 @app.route("/admin/courtes/add", methods=["GET", "POST"])

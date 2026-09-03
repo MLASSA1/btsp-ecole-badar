@@ -22,7 +22,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
     </div>
     <div class="stat-info">
-      <div class="stat-value">{{ courses|sum(attribute='row.participants') }}</div>
+      <div class="stat-value">{{ total_participants }}</div>
       <div class="stat-label">Participants</div>
     </div>
   </div>
@@ -40,16 +40,91 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     </div>
     <div class="stat-info">
-      <div class="stat-value">{{ '%.0f'|format(courses|sum(attribute='outstanding')) }}</div>
+      <div class="stat-value">{{ '%.0f'|format(total_outstanding) }}</div>
       <div class="stat-label">MAD restants</div>
+      <div class="stat-note">{{ '%.0f'|format(total_expected) }} MAD attendus</div>
     </div>
   </div>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <span>Sessions courtes — 1 jour à 1 mois</span>
+    <span>
+      {% if filters_active %}Sélection{% else %}Sessions courtes — 1 jour à 1 mois{% endif %}
+      <span class="text-sm text-muted">({{ courses|length }})</span>
+    </span>
     <span class="text-sm text-muted">Distinctes des classes à l'année</span>
+  </div>
+
+  <div class="card-body" style="padding-bottom:12px">
+    <form method="GET" class="filter-bar">
+      <div class="filter-field">
+        <label>Formation</label>
+        <select name="formation_id" onchange="this.form.submit()">
+          <option value="">Toutes les formations</option>
+          {% for f in used_formations %}
+          <option value="{{ f.id }}" {% if formation_filter == f.id %}selected{% endif %}>{{ f.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label>Durée</label>
+        <select name="duration" onchange="this.form.submit()">
+          <option value="">Toutes</option>
+          {% for d in used_durations %}
+          <option value="{{ d }}" {% if duration_filter == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label>Enseignant</label>
+        <select name="teacher_id" onchange="this.form.submit()">
+          <option value="">Tous</option>
+          {% for t in used_teachers %}
+          <option value="{{ t.id }}" {% if teacher_filter == t.id %}selected{% endif %}>{{ t.first_name }} {{ t.last_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label>Prix min (MAD)</label>
+        <input type="number" name="price_min" min="0" step="50"
+               value="{{ '%.0f'|format(price_min) if price_min is not none else '' }}"
+               placeholder="{{ '%.0f'|format(price_floor) }}">
+      </div>
+
+      <div class="filter-field">
+        <label>Prix max (MAD)</label>
+        <input type="number" name="price_max" min="0" step="50"
+               value="{{ '%.0f'|format(price_max) if price_max is not none else '' }}"
+               placeholder="{{ '%.0f'|format(price_ceiling) }}">
+      </div>
+
+      <div class="filter-field">
+        <label>Statut</label>
+        <select name="status" onchange="this.form.submit()">
+          <option value="">Toutes</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Actives</option>
+          <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archivées</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-sm btn-primary">Filtrer</button>
+        {% if filters_active %}
+        <a href="{{ url_for('admin_short_courses') }}" class="btn btn-sm">Réinitialiser</a>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if filters_active %}
+    <p class="text-sm text-muted" style="margin-top:12px">
+      Les totaux ci-dessus portent sur les {{ courses|length }} session{{ 's' if courses|length != 1 }}
+      de cette sélection.
+    </p>
+    {% endif %}
   </div>
   <div class="table-wrap">
     <table>
@@ -101,8 +176,13 @@
         </tr>
         {% else %}
         <tr><td colspan="9" style="text-align:center;padding:40px" class="text-muted">
-          Aucune formation courte pour le moment.
-          <a href="{{ url_for('admin_short_course_add') }}">Créer la première</a>
+          {% if filters_active %}
+            Aucune session ne correspond à cette sélection.
+            <a href="{{ url_for('admin_short_courses') }}">Réinitialiser les filtres</a>
+          {% else %}
+            Aucune formation courte pour le moment.
+            <a href="{{ url_for('admin_short_course_add') }}">Créer la première</a>
+          {% endif %}
         </td></tr>
         {% endfor %}
       </tbody>
