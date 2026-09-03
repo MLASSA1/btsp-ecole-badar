@@ -216,7 +216,7 @@ TRANSLATIONS = {
         "nav_pro": "Services Pro",
         "nav_student_space": "Espace Étudiant",
         # Hero
-        "hero_point_1": "Quatre pôles : culinaire, hôtellerie, santé, gestion",
+        "hero_point_1": "Trois pôles : culinaire, hôtellerie, gestion & langues",
         "hero_point_2": "Certificats et diplômes reconnus",
         "hero_point_3": "Stages et accompagnement vers l'emploi",
         "btn_pro_services": "Services aux Professionnels",
@@ -491,7 +491,7 @@ TRANSLATIONS = {
         "nav_pro": "Business Services",
         "nav_student_space": "Student Portal",
         # Hero
-        "hero_point_1": "Four schools: culinary, hospitality, health, business",
+        "hero_point_1": "Three schools: culinary, hospitality, business & languages",
         "hero_point_2": "Recognized certificates and diplomas",
         "hero_point_3": "Internships and career support",
         "btn_pro_services": "Services for Professionals",
@@ -766,7 +766,7 @@ TRANSLATIONS = {
         "nav_pro": "خدمات المهنيين",
         "nav_student_space": "فضاء الطالب",
         # الواجهة
-        "hero_point_1": "أربعة أقطاب: الطبخ، الفندقة، الصحة، التدبير",
+        "hero_point_1": "ثلاثة أقطاب: الطبخ، الفندقة، التدبير واللغات",
         "hero_point_2": "شهادات ودبلومات معترف بها",
         "hero_point_3": "تداريب ومواكبة نحو الشغل",
         "btn_pro_services": "خدمات المهنيين",

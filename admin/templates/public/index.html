@@ -132,6 +132,11 @@
             <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
           </div>
         </article>
+        {# Tied to the same published-categories check as the tabs: a pôle with
+           nothing left to enrol in should not be advertised with a photo and a
+           "voir les programmes" link that lands on an empty grid. Publish a
+           health programme again and this card returns on its own. #}
+        {% if 'health' in category_tabs|map(attribute='key')|list %}
         <article class="pillar-card" data-goto="health">
           <div class="pillar-media">
             <img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=760&h=520&fit=crop" alt="{{ t.pillar_4_title }}" loading="lazy">
@@ -148,6 +153,7 @@
             <a href="#formations" class="link-arrow">{{ t.btn_view_programs }}</a>
           </div>
         </article>
+        {% endif %}
       </div>
     </div>
   </section>
@@ -211,12 +217,12 @@
         <p>{{ t.formations_text }}</p>
       </div>
       <div class="formation-tabs" role="tablist">
+        {# Only poles that still have a published programme get a tab; an empty
+           one used to sit there and lead to a blank grid. #}
         <button class="tab active" data-cat="all" role="tab" aria-selected="true">{{ t.tab_all }}</button>
-        <button class="tab" data-cat="culinary" role="tab" aria-selected="false">{{ t.tab_culinary }}</button>
-        <button class="tab" data-cat="hospitality" role="tab" aria-selected="false">{{ t.tab_hospitality }}</button>
-        <button class="tab" data-cat="health" role="tab" aria-selected="false">{{ t.tab_health }}</button>
-        <button class="tab" data-cat="business" role="tab" aria-selected="false">{{ t.tab_business }}</button>
-        <button class="tab" data-cat="languages" role="tab" aria-selected="false">{{ t.tab_languages }}</button>
+        {% for c in category_tabs %}
+        <button class="tab" data-cat="{{ c.key }}" role="tab" aria-selected="false">{{ c.label }}</button>
+        {% endfor %}
       </div>
       <div class="formations-grid">
         {% for f in formations %}

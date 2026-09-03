@@ -1327,6 +1327,23 @@ def render_public(lang):
         formations = db.execute(
             "SELECT * FROM formations WHERE active = 1 AND lang = 'fr' ORDER BY sort_order"
         ).fetchall()
+    # The category tabs were hard-coded, so a pole with nothing left in it still
+    # offered a tab that led to an empty grid. Build them from what is actually
+    # published, keeping the established order.
+    CATEGORY_TABS = [
+        ("culinary", "tab_culinary"),
+        ("hospitality", "tab_hospitality"),
+        ("health", "tab_health"),
+        ("business", "tab_business"),
+        ("languages", "tab_languages"),
+    ]
+    present = {f["category"] for f in formations}
+    category_tabs = [
+        {"key": key, "label": t.get(label_key, key)}
+        for key, label_key in CATEGORY_TABS
+        if key in present
+    ]
+
     certificates = db.execute(
         "SELECT * FROM certificates WHERE active = 1 AND lang = ? ORDER BY sort_order",
         (lang,),
@@ -1388,6 +1405,7 @@ def render_public(lang):
         "public/index.html",
         settings=settings,
         formations=formations,
+        category_tabs=category_tabs,
         certificates=certificates,
         testimonials=testimonials,
         gallery=gallery,
