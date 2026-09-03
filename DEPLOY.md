@@ -15,18 +15,49 @@ SQLite database and uploaded media on a Docker volume.
 | nginx site | `/etc/nginx/sites-enabled/ecole-badar.visionxart.com` |
 | Auto-update | Watchtower polls the registry every 120 s |
 
+## Getting the code onto the server
+
+GitHub answers the server's anonymous `git fetch` with **HTTP 401** on the pack
+negotiation (`www-authenticate: Basic realm="GitHub"`), even though the
+repository is public and `curl` reaches the same endpoints fine. `git clone`
+and `git fetch` therefore fail there and prompt for a username. A deploy that
+ran `git fetch … && git reset --hard` silently kept the previous checkout and
+built *that* — the release looked successful and shipped nothing.
+
+Until the server has a GitHub token or deploy key, push to it over SSH from a
+machine that can reach GitHub:
+
+```bash
+git remote add deploy visionxart:/opt/build/btsp-ecole-badar   # once
+git push --force deploy main:refs/heads/deploy
+ssh visionxart 'cd /opt/build/btsp-ecole-badar && git reset --hard deploy'
+```
+
+`refs/heads/deploy` is used because a repository refuses a push to the branch
+it has checked out.
+
 ## Releasing a change
 
 Push to `main`, then rebuild and push the image. Watchtower picks it up within
 two minutes, or deploy immediately:
 
 ```bash
-ssh visionxart
-cd /opt/build/btsp-ecole-badar && git pull
-docker build -t ghcr.io/visionxartorg/btsp-ecole-badar:latest .
-docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest
-cd /opt/clients/btsp-ecole-badar && docker compose pull && docker compose up -d
+git push --force deploy main:refs/heads/deploy
+ssh visionxart '
+  set -e
+  cd /opt/build/btsp-ecole-badar
+  git reset --hard deploy --quiet
+  git rev-parse --short HEAD          # confirm this is the commit you meant
+  docker build -t ghcr.io/visionxartorg/btsp-ecole-badar:latest .
+  docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest
+  cd /opt/clients/btsp-ecole-badar && docker compose up -d
+'
+./verify-deploy.sh
 ```
+
+Check the commit the server prints before trusting the build. `set -e` does
+not abort on a failure inside an `&&` chain, which is how a failed fetch
+turned into a silent no-op release.
 
 ## Confirming a release actually landed
 
