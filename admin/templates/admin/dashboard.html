@@ -115,6 +115,31 @@
 </div>
 {% endif %}
 
+{% if stats.short_courses %}
+<div class="card">
+  <div class="card-header">
+    <span>Formations courtes</span>
+    <a href="{{ url_for('admin_short_courses') }}" class="btn btn-sm">Gérer</a>
+  </div>
+  <div class="card-body">
+    <div class="form-row">
+      <div>
+        <div class="stat-value">{{ stats.short_courses }}</div>
+        <div class="stat-label">Sessions actives</div>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats.short_participants }}</div>
+        <div class="stat-label">Participants</div>
+      </div>
+      <div>
+        <div class="stat-value">{{ '%.0f'|format(stats.short_collected) }}</div>
+        <div class="stat-label">MAD encaissés</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="section-title">Espace en ligne</div>
 <div class="stats-grid">
   <div class="stat-card"><div class="stat-info">

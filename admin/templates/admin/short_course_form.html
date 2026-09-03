@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Modifier' if course else 'Nouvelle' }} formation courte{% endblock %}
+{% block page_title %}{{ 'Modifier la formation courte' if course else 'Nouvelle formation courte' }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_short_courses') }}" class="btn btn-sm">Retour</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-group">
+        <label>Intitulé de la session *</label>
+        <input type="text" name="name" required value="{{ course.name if course else '' }}"
+               placeholder="Ex. HACCP — session de 3 jours">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Durée</label>
+          <select name="duration_label">
+            {% for d in durations %}
+            <option value="{{ d }}" {% if course and course.duration_label == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prix par participant (MAD)</label>
+          <input type="number" name="price" min="0" step="50"
+                 value="{{ '%.0f'|format(course.price or 0) if course else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date de début</label>
+          <input type="date" name="start_date" value="{{ course.start_date if course else '' }}">
+        </div>
+        <div class="form-group">
+          <label>Date de fin</label>
+          <input type="date" name="end_date" value="{{ course.end_date if course else '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Enseignant responsable</label>
+          <select name="teacher_id">
+            <option value="">— Aucun —</option>
+            {% for t in teachers %}
+            <option value="{{ t.id }}" {% if course and course.teacher_id == t.id %}selected{% endif %}>
+              {{ t.first_name }} {{ t.last_name }}{% if t.specialty %} — {{ t.specialty }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Formation liée</label>
+          <select name="formation_id">
+            <option value="">— Aucune —</option>
+            {% for f in formations %}
+            <option value="{{ f.id }}" {% if course and course.formation_id == f.id %}selected{% endif %}>{{ f.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Salle</label>
+          <input type="text" name="room" value="{{ course.room if course else '' }}">
+        </div>
+        <div class="form-group">
+          <label>Horaires</label>
+          <input type="text" name="schedule" value="{{ course.schedule if course else '' }}"
+                 placeholder="Ex. 09h00 - 17h00">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="active" {% if not course or course.active %}checked{% endif %}>
+          Session active
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        {{ 'Enregistrer' if course else 'Créer la session' }}
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if course %}
+<div class="card">
+  <div class="card-header">Supprimer</div>
+  <div class="card-body">
+    <p class="text-sm text-muted mb-4">
+      Supprime la session, ses participants et leurs paiements. Cette action est définitive.
+    </p>
+    <form method="POST" action="{{ url_for('admin_short_course_delete', id=course.id) }}"
+          onsubmit="return confirm('Supprimer cette formation courte, ses participants et leurs paiements ?')">
+      <button type="submit" class="btn btn-sm btn-danger">Supprimer la session</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

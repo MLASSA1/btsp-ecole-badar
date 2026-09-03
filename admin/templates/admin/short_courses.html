@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block title %}Formations courtes{% endblock %}
+{% block page_title %}Formations courtes{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_short_course_add') }}" class="btn btn-accent">+ Nouvelle formation courte</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ courses|length }}</div>
+      <div class="stat-label">Formations courtes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ courses|sum(attribute='row.participants') }}</div>
+      <div class="stat-label">Participants</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(total_collected) }}</div>
+      <div class="stat-label">MAD encaissés</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(courses|sum(attribute='outstanding')) }}</div>
+      <div class="stat-label">MAD restants</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span>Sessions courtes — 1 jour à 1 mois</span>
+    <span class="text-sm text-muted">Distinctes des classes à l'année</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Formation</th>
+          <th>Durée</th>
+          <th>Dates</th>
+          <th>Enseignant</th>
+          <th>Participants</th>
+          <th>Prix</th>
+          <th>Encaissé</th>
+          <th>Reste</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in courses %}
+        {% set r = c.row %}
+        <tr {% if not r.active %}class="text-muted"{% endif %}>
+          <td>
+            <a href="{{ url_for('admin_short_course_detail', id=r.id) }}"><strong>{{ r.name }}</strong></a>
+            {% if r.formation_title %}<br><span class="text-sm text-muted">{{ r.formation_title }}</span>{% endif %}
+            {% if not r.active %}<br><span class="badge badge-warning">Archivée</span>{% endif %}
+          </td>
+          <td><span class="badge badge-info">{{ r.duration_label or '—' }}</span></td>
+          <td class="text-sm">
+            {% if r.start_date %}{{ r.start_date }}{% endif %}
+            {% if r.end_date %}<br>→ {{ r.end_date }}{% endif %}
+            {% if not r.start_date and not r.end_date %}—{% endif %}
+          </td>
+          <td class="text-sm">
+            {% if r.teacher_first %}{{ r.teacher_first }} {{ r.teacher_last }}
+            {% else %}<span class="badge badge-warning">Non assigné</span>{% endif %}
+          </td>
+          <td>{{ r.participants }}</td>
+          <td>{{ '%.0f'|format(r.price or 0) }} MAD</td>
+          <td>{{ '%.0f'|format(c.collected) }} MAD</td>
+          <td>
+            {% if c.outstanding > 0 %}
+              <span class="badge badge-danger">{{ '%.0f'|format(c.outstanding) }} MAD</span>
+            {% else %}
+              <span class="badge badge-success">Soldé</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('admin_short_course_detail', id=r.id) }}" class="btn btn-sm">Ouvrir</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:40px" class="text-muted">
+          Aucune formation courte pour le moment.
+          <a href="{{ url_for('admin_short_course_add') }}">Créer la première</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

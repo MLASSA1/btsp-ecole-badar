@@ -1,0 +1,174 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block page_title %}{{ course.name }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_short_course_participant_add', id=course.id) }}" class="btn btn-accent">+ Inscrire un participant</a>
+  <a href="{{ url_for('admin_short_course_edit', id=course.id) }}" class="btn btn-sm">Modifier</a>
+  <a href="{{ url_for('admin_short_courses') }}" class="btn btn-sm">Retour</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ participants|length }}</div>
+      <div class="stat-label">Participants</div>
+      <div class="stat-note">{{ settled_count }} ont soldé</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(collected) }}</div>
+      <div class="stat-label">MAD encaissés</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(outstanding) }}</div>
+      <div class="stat-label">MAD restants</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-value">{{ '%.0f'|format(expected) }}</div>
+      <div class="stat-label">MAD attendus</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>Détails de la session</span></div>
+  <div class="card-body">
+    <div class="form-row">
+      <div>
+        <div class="stat-label">Enseignant</div>
+        {% if course.teacher_first %}
+          <p style="margin-top:6px"><strong>{{ course.teacher_first }} {{ course.teacher_last }}</strong></p>
+          <p class="text-sm text-muted">
+            {{ course.teacher_specialty or '' }}
+            {% if course.teacher_phone %}<br>{{ course.teacher_phone }}{% endif %}
+          </p>
+        {% else %}
+          <p style="margin-top:6px"><span class="badge badge-warning">Aucun enseignant assigné</span></p>
+        {% endif %}
+      </div>
+      <div>
+        <div class="stat-label">Session</div>
+        <p class="text-sm" style="margin-top:6px">
+          Durée : <strong>{{ course.duration_label or '—' }}</strong><br>
+          Prix : <strong>{{ '%.0f'|format(course.price or 0) }} MAD</strong> par participant<br>
+          {% if course.start_date %}Du {{ course.start_date }}{% if course.end_date %} au {{ course.end_date }}{% endif %}<br>{% endif %}
+          {% if course.formation_title %}Formation : {{ course.formation_title }}<br>{% endif %}
+          Salle : {{ course.room or '—' }}{% if course.schedule %} — {{ course.schedule }}{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span>Participants &amp; règlement</span>
+    <a href="{{ url_for('admin_short_course_participant_add', id=course.id) }}" class="btn btn-sm btn-accent">+ Inscrire</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Participant</th>
+          <th>Téléphone</th>
+          <th>Dû</th>
+          <th>Payé</th>
+          <th>Reste</th>
+          <th>Enregistrer un paiement</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in participants %}
+        {% set s = p.row %}
+        <tr>
+          <td>
+            <strong>{{ s.first_name }} {{ s.last_name }}</strong>
+            {% if s.email %}<br><span class="text-sm text-muted">{{ s.email }}</span>{% endif %}
+          </td>
+          <td class="text-sm">{{ s.phone or s.guardian_phone or '—' }}</td>
+          <td>{{ '%.0f'|format(p.due) }} MAD</td>
+          <td>{{ '%.0f'|format(p.paid) }} MAD</td>
+          <td>
+            {% if p.settled %}
+              <span class="badge badge-success">Soldé</span>
+            {% else %}
+              <span class="badge badge-danger">{{ '%.0f'|format(p.balance) }} MAD</span>
+            {% endif %}
+          </td>
+          <td>
+            {# A short course can be settled in one go or in instalments, so
+               each entry adds a payment rather than flipping a status. #}
+            <form method="POST" action="{{ url_for('admin_short_payment_add') }}" class="flex gap-2 items-center">
+              <input type="hidden" name="class_id" value="{{ course.id }}">
+              <input type="hidden" name="student_id" value="{{ s.id }}">
+              {# Pre-fill what is still owed; leave it blank once settled so the
+                 row does not offer a zero payment as if it were an action. #}
+              <input type="number" name="amount" min="0" step="50"
+                     value="{% if p.balance > 0 %}{{ '%.0f'|format(p.balance) }}{% endif %}"
+                     placeholder="Montant"
+                     style="width:92px;padding:8px 10px" aria-label="Montant">
+              <input type="date" name="paid_on" value="{{ today }}"
+                     style="width:148px;padding:8px 10px" aria-label="Date du paiement">
+              <button type="submit" class="btn btn-sm btn-success">Ajouter</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:40px" class="text-muted">
+          Aucun participant inscrit.
+          <a href="{{ url_for('admin_short_course_participant_add', id=course.id) }}">Inscrire le premier</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if payments %}
+<div class="card">
+  <div class="card-header"><span>Historique des paiements</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Participant</th><th>Montant</th><th>Moyen</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td class="text-sm">{{ p.paid_on or '—' }}</td>
+          <td><strong>{{ p.first_name }} {{ p.last_name }}</strong></td>
+          <td>{{ '%.0f'|format(p.amount or 0) }} MAD</td>
+          <td class="text-sm text-muted">{{ p.method or '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin_short_payment_delete', payment_id=p.id) }}"
+                  onsubmit="return confirm('Supprimer ce paiement ?')">
+              <button type="submit" class="btn btn-sm">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

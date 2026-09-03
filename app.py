@@ -531,6 +531,16 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE (student_id, year, month)
         )""",
+        f"""CREATE TABLE IF NOT EXISTS session_payments (
+            id {auto_id},
+            class_id INTEGER NOT NULL,
+            student_id INTEGER NOT NULL,
+            amount REAL DEFAULT 0,
+            method TEXT DEFAULT '',
+            paid_on TEXT DEFAULT '',
+            note TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
     ]
 
     _run_ddl(db, tables)
@@ -743,6 +753,13 @@ def migrate_db():
         # Existing admins keep full access; new school staff are created as 'school'.
         "ALTER TABLE admin_user ADD COLUMN role TEXT NOT NULL DEFAULT 'super'",
         "ALTER TABLE admin_user ADD COLUMN full_name TEXT DEFAULT ''",
+        # Short courses (1 jour, 3 jours, 1 semaine, 1 mois) sit alongside the
+        # year-long classes but bill once instead of monthly, so they are the
+        # same table with a kind flag rather than a parallel one — teachers,
+        # rooms and participants stay shared. Existing rows are annual.
+        "ALTER TABLE school_classes ADD COLUMN kind TEXT NOT NULL DEFAULT 'annual'",
+        "ALTER TABLE school_classes ADD COLUMN duration_label TEXT DEFAULT ''",
+        "ALTER TABLE school_classes ADD COLUMN price REAL DEFAULT 0",
     ]
     if USE_PG:
         # Postgres aborts the whole transaction on a failed statement, so each
@@ -1588,7 +1605,11 @@ def admin_dashboard():
 
     # School staff get a school dashboard; they never see site-content counters.
     if not current_user.is_super:
-        pupils = db.execute("SELECT COUNT(*) FROM class_students WHERE active=1").fetchone()[0]
+        pupils = db.execute(
+        """SELECT COUNT(*) FROM class_students s
+             LEFT JOIN school_classes c ON c.id = s.class_id
+            WHERE s.active = 1 AND COALESCE(c.kind, 'annual') = 'annual'"""
+    ).fetchone()[0]
         paid = db.execute(
             "SELECT COUNT(*) FROM payments WHERE year=? AND month=? AND status='paid'",
             (today.year, today.month),
@@ -1599,7 +1620,9 @@ def admin_dashboard():
         ).fetchone()[0]
         school_stats = {
             "teachers": db.execute("SELECT COUNT(*) FROM teachers WHERE active=1").fetchone()[0],
-            "classes": db.execute("SELECT COUNT(*) FROM school_classes WHERE active=1").fetchone()[0],
+            "classes": db.execute(
+                "SELECT COUNT(*) FROM school_classes WHERE active=1 AND kind='annual'"
+            ).fetchone()[0],
             "pupils": pupils,
             "paid": paid,
             "unpaid": max(pupils - paid, 0),
@@ -1637,7 +1660,11 @@ def admin_dashboard():
     # The directeur's dashboard listed only website counters — nothing about the
     # school itself, which is the part that actually needs watching. Pupils,
     # classes, teachers and this month's money now sit alongside it.
-    pupils = db.execute("SELECT COUNT(*) FROM class_students WHERE active=1").fetchone()[0]
+    pupils = db.execute(
+        """SELECT COUNT(*) FROM class_students s
+             LEFT JOIN school_classes c ON c.id = s.class_id
+            WHERE s.active = 1 AND COALESCE(c.kind, 'annual') = 'annual'"""
+    ).fetchone()[0]
     paid_rows = db.execute(
         "SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM payments "
         "WHERE year=? AND month=? AND status='paid'",
@@ -1656,7 +1683,20 @@ def admin_dashboard():
     ).fetchone()[0]
     stats.update({
         "pupils": pupils,
-        "classes": db.execute("SELECT COUNT(*) FROM school_classes WHERE active=1").fetchone()[0],
+        "classes": db.execute(
+            "SELECT COUNT(*) FROM school_classes WHERE active=1 AND kind='annual'"
+        ).fetchone()[0],
+        "short_courses": db.execute(
+            "SELECT COUNT(*) FROM school_classes WHERE active=1 AND kind='short'"
+        ).fetchone()[0],
+        "short_participants": db.execute(
+            """SELECT COUNT(*) FROM class_students s
+                 JOIN school_classes c ON c.id = s.class_id
+                WHERE s.active = 1 AND c.kind = 'short'"""
+        ).fetchone()[0],
+        "short_collected": db.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM session_payments"
+        ).fetchone()[0] or 0,
         "teachers": db.execute("SELECT COUNT(*) FROM teachers WHERE active=1").fetchone()[0],
         "paid": paid_rows["n"],
         "unpaid": max(pupils - paid_rows["n"], 0),
@@ -3164,7 +3204,7 @@ def admin_teacher_add():
         db.commit()
         flash("Enseignant ajouté.", "success")
         return redirect(url_for("admin_teachers"))
-    classes = db.execute("SELECT * FROM school_classes ORDER BY name").fetchall()
+    classes = db.execute("SELECT * FROM school_classes WHERE kind = 'annual' ORDER BY name").fetchall()
     return render_template("admin/teacher_form.html", teacher=None, classes=classes)
 
 
@@ -3214,6 +3254,7 @@ def admin_classes():
              FROM school_classes c
              LEFT JOIN teachers t ON c.teacher_id = t.id
              LEFT JOIN formations f ON c.formation_id = f.id
+            WHERE c.kind = 'annual'
             ORDER BY c.active DESC, c.name"""
     ).fetchall()
     return render_template("admin/classes.html", classes=classes)
@@ -3388,16 +3429,17 @@ def admin_pupils():
     class_filter = request.args.get("class_id", type=int)
     sql = """SELECT s.*, c.name AS class_name
                FROM class_students s
-               LEFT JOIN school_classes c ON s.class_id = c.id"""
+               LEFT JOIN school_classes c ON s.class_id = c.id
+              WHERE COALESCE(c.kind, 'annual') = 'annual'"""
     params = ()
     if class_filter:
-        sql += " WHERE s.class_id = ?"
+        sql += " AND s.class_id = ?"
         params = (class_filter,)
     sql += " ORDER BY s.active DESC, s.last_name, s.first_name"
     return render_template(
         "admin/pupils.html",
         pupils=db.execute(sql, params).fetchall(),
-        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        classes=db.execute("SELECT * FROM school_classes WHERE kind = 'annual' ORDER BY name").fetchall(),
         class_filter=class_filter,
     )
 
@@ -3445,7 +3487,7 @@ def admin_pupil_edit(id):
     return render_template(
         "admin/pupil_form.html",
         pupil=pupil,
-        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        classes=db.execute("SELECT * FROM school_classes WHERE kind = 'annual' ORDER BY name").fetchall(),
         payments=payments,
         months=MONTHS_FR,
         preselect=None,
@@ -3483,7 +3525,8 @@ def admin_payments():
                LEFT JOIN teachers t ON c.teacher_id = t.id
                LEFT JOIN payments p
                  ON p.student_id = s.id AND p.year = ? AND p.month = ?
-              WHERE s.active = 1"""
+              WHERE s.active = 1
+                AND COALESCE(c.kind, 'annual') = 'annual'"""
     params = [year, month]
     if class_filter:
         sql += " AND s.class_id = ?"
@@ -3561,7 +3604,7 @@ def admin_payments():
         month=month,
         months=MONTHS_FR,
         years=list(range(today.year - 3, today.year + 2)),
-        classes=db.execute("SELECT * FROM school_classes ORDER BY name").fetchall(),
+        classes=db.execute("SELECT * FROM school_classes WHERE kind = 'annual' ORDER BY name").fetchall(),
         class_filter=class_filter,
         status_filter=status_filter,
         total_due=total_due,
@@ -3689,6 +3732,304 @@ def admin_payment_mark():
                 class_id=request.form.get("class_id_filter") or None,
                 status=request.form.get("status_filter") or None)
     )
+
+
+# --------------- Admin: Short courses (1 jour … 1 mois) ---------------
+#
+# A short course bills once, not every month, so it cannot ride on the monthly
+# payments table: its UNIQUE (student_id, year, month) would collide the moment
+# somebody took two short courses in one month, and a one-day course has no
+# "month paid". Participants are ordinary class_students rows attached to a
+# class whose kind is 'short'; the money lives in session_payments, which
+# allows several instalments per participant.
+
+SHORT_DURATIONS = ["1 jour", "3 jours", "1 semaine", "1 mois", "Autre"]
+
+
+def _short_class_form():
+    def _fk(name):
+        raw = request.form.get(name, "").strip()
+        return int(raw) if raw.isdigit() else None
+
+    def _num(name):
+        raw = request.form.get(name, "").strip()
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return 0.0
+        if value != value or value in (float("inf"), float("-inf")) or value < 0:
+            return 0.0
+        return min(value, 1_000_000.0)
+
+    return (
+        request.form.get("name", "").strip(),
+        _fk("formation_id"),
+        _fk("teacher_id"),
+        request.form.get("duration_label", "").strip(),
+        _num("price"),
+        request.form.get("room", "").strip(),
+        request.form.get("schedule", "").strip(),
+        clean_pay_date(request.form.get("start_date"), fallback=""),
+        clean_pay_date(request.form.get("end_date"), fallback=""),
+        1 if request.form.get("active") else 0,
+    )
+
+
+@app.route("/admin/courtes")
+@login_required
+def admin_short_courses():
+    db = get_db()
+    courses = db.execute(
+        """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
+                  f.title AS formation_title,
+                  (SELECT COUNT(*) FROM class_students s
+                    WHERE s.class_id = c.id AND s.active = 1) AS participants,
+                  (SELECT COALESCE(SUM(p.amount), 0) FROM session_payments p
+                    WHERE p.class_id = c.id) AS collected,
+                  -- Expected is the sum of what each participant was actually
+                  -- charged, not price x headcount: a negotiated rate made this
+                  -- list report money still owed on a course the detail page
+                  -- showed as fully settled.
+                  (SELECT COALESCE(SUM(COALESCE(NULLIF(s.monthly_fee, 0), c.price, 0)), 0)
+                     FROM class_students s
+                    WHERE s.class_id = c.id AND s.active = 1) AS expected
+             FROM school_classes c
+             LEFT JOIN teachers t ON c.teacher_id = t.id
+             LEFT JOIN formations f ON c.formation_id = f.id
+            WHERE c.kind = 'short'
+            ORDER BY c.active DESC, c.start_date DESC, c.name"""
+    ).fetchall()
+    rows = []
+    for c in courses:
+        expected = c["expected"] or 0
+        rows.append({
+            "row": c,
+            "expected": expected,
+            "collected": c["collected"] or 0,
+            "outstanding": max(expected - (c["collected"] or 0), 0),
+        })
+    return render_template("admin/short_courses.html", courses=rows,
+                           total_collected=sum(r["collected"] for r in rows),
+                           total_expected=sum(r["expected"] for r in rows))
+
+
+@app.route("/admin/courtes/add", methods=["GET", "POST"])
+@login_required
+def admin_short_course_add():
+    db = get_db()
+    if request.method == "POST":
+        db.execute(
+            """INSERT INTO school_classes
+                 (name, formation_id, teacher_id, duration_label, price, room, schedule,
+                  start_date, end_date, active, kind, monthly_fee, academic_year)
+               VALUES (?,?,?,?,?,?,?,?,?,?,'short',0,'')""",
+            _short_class_form(),
+        )
+        db.commit()
+        flash("Formation courte créée.", "success")
+        return redirect(url_for("admin_short_courses"))
+    return render_template(
+        "admin/short_course_form.html", course=None, durations=SHORT_DURATIONS,
+        teachers=db.execute("SELECT * FROM teachers WHERE active=1 ORDER BY last_name").fetchall(),
+        formations=db.execute("SELECT id, title FROM formations WHERE active=1 ORDER BY title").fetchall(),
+    )
+
+
+@app.route("/admin/courtes/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_short_course_edit(id):
+    db = get_db()
+    course = db.execute(
+        "SELECT * FROM school_classes WHERE id=? AND kind='short'", (id,)
+    ).fetchone()
+    if not course:
+        abort(404)
+    if request.method == "POST":
+        db.execute(
+            """UPDATE school_classes SET name=?, formation_id=?, teacher_id=?, duration_label=?,
+                      price=?, room=?, schedule=?, start_date=?, end_date=?, active=?
+                WHERE id=? AND kind='short'""",
+            _short_class_form() + (id,),
+        )
+        db.commit()
+        flash("Formation courte mise à jour.", "success")
+        return redirect(url_for("admin_short_course_detail", id=id))
+    return render_template(
+        "admin/short_course_form.html", course=course, durations=SHORT_DURATIONS,
+        teachers=db.execute("SELECT * FROM teachers WHERE active=1 ORDER BY last_name").fetchall(),
+        formations=db.execute("SELECT id, title FROM formations WHERE active=1 ORDER BY title").fetchall(),
+    )
+
+
+@app.route("/admin/courtes/<int:id>")
+@login_required
+def admin_short_course_detail(id):
+    db = get_db()
+    course = db.execute(
+        """SELECT c.*, t.first_name AS teacher_first, t.last_name AS teacher_last,
+                  t.phone AS teacher_phone, t.specialty AS teacher_specialty,
+                  f.title AS formation_title
+             FROM school_classes c
+             LEFT JOIN teachers t ON c.teacher_id = t.id
+             LEFT JOIN formations f ON c.formation_id = f.id
+            WHERE c.id = ? AND c.kind = 'short'""",
+        (id,),
+    ).fetchone()
+    if not course:
+        abort(404)
+
+    people = db.execute(
+        """SELECT s.*, COALESCE(SUM(p.amount), 0) AS paid
+             FROM class_students s
+             LEFT JOIN session_payments p ON p.student_id = s.id AND p.class_id = s.class_id
+            WHERE s.class_id = ? AND s.active = 1
+            GROUP BY s.id
+            ORDER BY s.last_name, s.first_name""",
+        (id,),
+    ).fetchall()
+
+    participants = []
+    for s in people:
+        # A participant may be charged something other than the course price.
+        due = s["monthly_fee"] or course["price"] or 0
+        paid = s["paid"] or 0
+        participants.append({
+            "row": s, "due": due, "paid": paid,
+            "balance": round(due - paid, 2),
+            "settled": paid + 0.001 >= due,
+        })
+
+    payments = db.execute(
+        """SELECT p.*, s.first_name, s.last_name
+             FROM session_payments p
+             JOIN class_students s ON s.id = p.student_id
+            WHERE p.class_id = ?
+            ORDER BY p.paid_on DESC, p.id DESC""",
+        (id,),
+    ).fetchall()
+
+    expected = sum(p["due"] for p in participants)
+    collected = sum(p["paid"] for p in participants)
+    return render_template(
+        "admin/short_course_detail.html",
+        course=course, participants=participants, payments=payments,
+        expected=expected, collected=collected,
+        outstanding=max(expected - collected, 0),
+        settled_count=sum(1 for p in participants if p["settled"]),
+        today=date.today().isoformat(),
+    )
+
+
+@app.route("/admin/courtes/<int:id>/participants/add", methods=["GET", "POST"])
+@login_required
+def admin_short_course_participant_add(id):
+    db = get_db()
+    course = db.execute(
+        "SELECT * FROM school_classes WHERE id=? AND kind='short'", (id,)
+    ).fetchone()
+    if not course:
+        abort(404)
+    if request.method == "POST":
+        fee_raw = request.form.get("fee", "").strip()
+        try:
+            fee = float(fee_raw)
+        except (TypeError, ValueError):
+            fee = 0.0
+        if fee != fee or fee in (float("inf"), float("-inf")) or fee < 0:
+            fee = 0.0
+        db.execute(
+            """INSERT INTO class_students
+                 (first_name, last_name, email, phone, guardian_phone, class_id,
+                  monthly_fee, enrolled_on, notes, active)
+               VALUES (?,?,?,?,?,?,?,?,?,1)""",
+            (
+                request.form.get("first_name", "").strip(),
+                request.form.get("last_name", "").strip(),
+                request.form.get("email", "").strip(),
+                request.form.get("phone", "").strip(),
+                request.form.get("guardian_phone", "").strip(),
+                id,
+                min(fee, 1_000_000.0),
+                clean_pay_date(request.form.get("enrolled_on"), fallback=date.today().isoformat()),
+                request.form.get("notes", "").strip(),
+            ),
+        )
+        db.commit()
+        flash("Participant inscrit.", "success")
+        return redirect(url_for("admin_short_course_detail", id=id))
+    return render_template("admin/short_participant_form.html", course=course)
+
+
+@app.route("/admin/courtes/paiement", methods=["POST"])
+@login_required
+def admin_short_payment_add():
+    db = get_db()
+    class_id = request.form.get("class_id", type=int)
+    student_id = request.form.get("student_id", type=int)
+    if not (class_id and student_id):
+        abort(400)
+    # The participant must actually belong to this course.
+    owner = db.execute(
+        """SELECT 1 FROM class_students s
+             JOIN school_classes c ON c.id = s.class_id
+            WHERE s.id = ? AND s.class_id = ? AND c.kind = 'short'""",
+        (student_id, class_id),
+    ).fetchone()
+    if not owner:
+        abort(404)
+    amount = request.form.get("amount", type=float)
+    if amount is None or amount != amount or amount in (float("inf"), float("-inf")):
+        amount = 0.0
+    amount = min(max(float(amount), 0.0), 1_000_000.0)
+    if amount <= 0:
+        # A zero row records nothing and only clutters the history.
+        flash("Saisissez un montant supérieur à 0.", "error")
+        return redirect(url_for("admin_short_course_detail", id=class_id))
+    db.execute(
+        "INSERT INTO session_payments (class_id, student_id, amount, method, paid_on, note) "
+        "VALUES (?,?,?,?,?,?)",
+        (
+            class_id, student_id, amount,
+            request.form.get("method", "").strip(),
+            clean_pay_date(request.form.get("paid_on")),
+            request.form.get("note", "").strip(),
+        ),
+    )
+    db.commit()
+    flash("Paiement enregistré.", "success")
+    return redirect(url_for("admin_short_course_detail", id=class_id))
+
+
+@app.route("/admin/courtes/paiement/<int:payment_id>/delete", methods=["POST"])
+@login_required
+def admin_short_payment_delete(payment_id):
+    db = get_db()
+    row = db.execute("SELECT class_id FROM session_payments WHERE id=?", (payment_id,)).fetchone()
+    if not row:
+        abort(404)
+    db.execute("DELETE FROM session_payments WHERE id=?", (payment_id,))
+    db.commit()
+    flash("Paiement supprimé.", "success")
+    return redirect(url_for("admin_short_course_detail", id=row["class_id"]))
+
+
+@app.route("/admin/courtes/<int:id>/delete", methods=["POST"])
+@login_required
+def admin_short_course_delete(id):
+    db = get_db()
+    course = db.execute(
+        "SELECT id FROM school_classes WHERE id=? AND kind='short'", (id,)
+    ).fetchone()
+    if not course:
+        abort(404)
+    # Participants of a short course exist only for that course, so they go
+    # with it — unlike a year class, where pupils are kept and unassigned.
+    db.execute("DELETE FROM session_payments WHERE class_id=?", (id,))
+    db.execute("DELETE FROM class_students WHERE class_id=?", (id,))
+    db.execute("DELETE FROM school_classes WHERE id=? AND kind='short'", (id,))
+    db.commit()
+    flash("Formation courte supprimée.", "success")
+    return redirect(url_for("admin_short_courses"))
 
 
 # --------------- Run ---------------
