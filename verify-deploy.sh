@@ -56,11 +56,15 @@ done
 check "brute-force cap (7th attempt)" "$last" 429
 
 echo ""
+# Every published programme should carry its own photo. Counting cards against
+# distinct images catches a duplicate or a missing one without hard-coding a
+# catalogue size, which goes stale the moment a programme is hidden.
+cards=$(curl -s "$SITE/" | grep -c 'class="formation-card')
 images=$(curl -s "$SITE/" | grep -oE 'images\.unsplash\.com/photo-[a-z0-9-]+' | sort -u | wc -l | tr -d ' ')
-if [ "$images" -ge 26 ]; then
-    printf '  ok    %-42s %s unique\n' "programme photos" "$images"
+if [ "$cards" -gt 0 ] && [ "$images" -ge "$cards" ]; then
+    printf '  ok    %-42s %s cards, %s distinct photos\n' "programme photos" "$cards" "$images"
 else
-    printf '  FAIL  %-42s %s unique, expected 26+\n' "programme photos" "$images"
+    printf '  FAIL  %-42s %s cards but only %s distinct photos\n' "programme photos" "$cards" "$images"
     fails=$((fails + 1))
 fi
 check "iPhone viewport-fit" "$(curl -s "$SITE/" | grep -c 'viewport-fit=cover')" 1
