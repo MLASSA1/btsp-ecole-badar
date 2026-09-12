@@ -44,9 +44,12 @@
             <li>{{ t.hero_point_4 }}</li>
           </ul>
           <div class="hero-buttons">
-            <a href="#formations" class="btn btn-accent">{{ t.btn_discover }}</a>
-            <a href="#services" class="btn btn-ghost">{{ t.btn_pro_services }}</a>
+            <a href="#pro-contact" class="btn btn-accent">{{ t.hero_cta_pro }}</a>
+            <a href="#catalogue" class="btn btn-ghost">{{ t.corp_cta }}</a>
           </div>
+          {# An individual landing on a page written for employers still needs
+             one obvious way through to the school side. #}
+          <p class="hero-aside"><a href="#formations">{{ t.hero_cta_school }}</a></p>
         </div>
       </div>
       <div class="hero-media" {% if settings.get('hero_bg_image') %}style="background-image:url('{{ settings.get('hero_bg_image') }}')"{% endif %}></div>
@@ -73,6 +76,140 @@
     </div>
   </section>
   {% endif %}
+
+  <!-- Services for professionals -->
+  {% if settings.get('show_services', '1') == '1' %}
+  <section class="section pro" id="services">
+    <div class="container">
+      <div class="section-header section-header--light">
+        <span class="section-tag">{{ t.pro_tag }}</span>
+        <h2>{{ t.pro_title }} <em>{{ t.pro_title_em }}</em></h2>
+        <p>{{ t.pro_text }}</p>
+      </div>
+      <div class="pro-grid">
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3>{{ t.pro_1_title }}</h3>
+          <p>{{ t.pro_1_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_1_item_1 }}</li>
+            <li>{{ t.pro_1_item_2 }}</li>
+            <li>{{ t.pro_1_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+          </div>
+          <h3>{{ t.pro_2_title }}</h3>
+          <p>{{ t.pro_2_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_2_item_1 }}</li>
+            <li>{{ t.pro_2_item_2 }}</li>
+            <li>{{ t.pro_2_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 11l3 3 6-6"/><path d="M21 12v6a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h8"/></svg>
+          </div>
+          <h3>{{ t.pro_3_title }}</h3>
+          <p>{{ t.pro_3_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_3_item_1 }}</li>
+            <li>{{ t.pro_3_item_2 }}</li>
+            <li>{{ t.pro_3_item_3 }}</li>
+          </ul>
+        </article>
+        <article class="pro-card">
+          <div class="pro-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 21h18M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          </div>
+          <h3>{{ t.pro_4_title }}</h3>
+          <p>{{ t.pro_4_desc }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t.pro_4_item_1 }}</li>
+            <li>{{ t.pro_4_item_2 }}</li>
+            <li>{{ t.pro_4_item_3 }}</li>
+          </ul>
+        </article>
+      </div>
+      <div class="pro-cta">
+        <div>
+          <h3>{{ t.pro_cta_title }}</h3>
+          <p>{{ t.pro_cta_text }}</p>
+        </div>
+        <a href="#pro-contact" class="btn btn-accent">{{ t.btn_corporate_contact }}</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Admission process -->
+  {% if settings.get('show_process', '1') == '1' %}
+  <!-- Corporate training catalogue: the nine modules an employer actually buys.
+       Placed directly after the professional services because a hotel or
+       restaurant reading this page wants the curriculum, not the student
+       prospectus. -->
+  <section class="section corp" id="catalogue">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.corp_tag }}</span>
+        <h2>{{ t.corp_title }} <em>{{ t.corp_title_em }}</em></h2>
+        <p>{{ t.corp_text }}</p>
+      </div>
+      <div class="corp-grid">
+        {% for i in range(1, 10) %}
+        <article class="corp-card reveal">
+          <span class="corp-num">{{ '%02d'|format(i) }}</span>
+          <h3>{{ t['corp_' ~ i ~ '_title'] }}</h3>
+          <ul class="corp-items">
+            {% for j in range(1, 5) %}
+            <li>{{ t['corp_' ~ i ~ '_item_' ~ j] }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="corp-cta">
+        <a href="#pro-contact" class="btn btn-accent btn-lg">{{ t.corp_cta }}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Proof. For an employer choosing a provider this outranks every other
+       section on the page, so it sits immediately after the catalogue. -->
+  <section class="section refs" id="references">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.exp_tag }}</span>
+        <h2>{{ t.exp_title }} <em>{{ t.exp_title_em }}</em></h2>
+        <p>{{ t.exp_text }}</p>
+      </div>
+      <div class="refs-grid">
+        <ul class="refs-list">
+          {% for i in range(1, 6) %}
+          <li class="reveal">
+            <span class="refs-check">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span>{{ t['exp_' ~ i] }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <aside class="refs-clients reveal">
+          <h3>{{ t.exp_clients_title }}</h3>
+          <ul>
+            {% for i in range(1, 4) %}
+            <li>{{ t['exp_client_' ~ i] }}</li>
+            {% endfor %}
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
 
   <!-- Pôles / Schools -->
   {% if settings.get('show_pillars', '1') == '1' %}
@@ -342,78 +479,7 @@
   </section>
   {% endif %}
 
-  <!-- Services for professionals -->
-  {% if settings.get('show_services', '1') == '1' %}
-  <section class="section pro" id="services">
-    <div class="container">
-      <div class="section-header section-header--light">
-        <span class="section-tag">{{ t.pro_tag }}</span>
-        <h2>{{ t.pro_title }} <em>{{ t.pro_title_em }}</em></h2>
-        <p>{{ t.pro_text }}</p>
-      </div>
-      <div class="pro-grid">
-        <article class="pro-card">
-          <div class="pro-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-          </div>
-          <h3>{{ t.pro_1_title }}</h3>
-          <p>{{ t.pro_1_desc }}</p>
-          <ul class="ticks ticks--light">
-            <li>{{ t.pro_1_item_1 }}</li>
-            <li>{{ t.pro_1_item_2 }}</li>
-            <li>{{ t.pro_1_item_3 }}</li>
-          </ul>
-        </article>
-        <article class="pro-card">
-          <div class="pro-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
-          </div>
-          <h3>{{ t.pro_2_title }}</h3>
-          <p>{{ t.pro_2_desc }}</p>
-          <ul class="ticks ticks--light">
-            <li>{{ t.pro_2_item_1 }}</li>
-            <li>{{ t.pro_2_item_2 }}</li>
-            <li>{{ t.pro_2_item_3 }}</li>
-          </ul>
-        </article>
-        <article class="pro-card">
-          <div class="pro-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 11l3 3 6-6"/><path d="M21 12v6a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h8"/></svg>
-          </div>
-          <h3>{{ t.pro_3_title }}</h3>
-          <p>{{ t.pro_3_desc }}</p>
-          <ul class="ticks ticks--light">
-            <li>{{ t.pro_3_item_1 }}</li>
-            <li>{{ t.pro_3_item_2 }}</li>
-            <li>{{ t.pro_3_item_3 }}</li>
-          </ul>
-        </article>
-        <article class="pro-card">
-          <div class="pro-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 21h18M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
-          </div>
-          <h3>{{ t.pro_4_title }}</h3>
-          <p>{{ t.pro_4_desc }}</p>
-          <ul class="ticks ticks--light">
-            <li>{{ t.pro_4_item_1 }}</li>
-            <li>{{ t.pro_4_item_2 }}</li>
-            <li>{{ t.pro_4_item_3 }}</li>
-          </ul>
-        </article>
-      </div>
-      <div class="pro-cta">
-        <div>
-          <h3>{{ t.pro_cta_title }}</h3>
-          <p>{{ t.pro_cta_text }}</p>
-        </div>
-        <a href="#pro-contact" class="btn btn-accent">{{ t.btn_corporate_contact }}</a>
-      </div>
-    </div>
-  </section>
-  {% endif %}
 
-  <!-- Admission process -->
-  {% if settings.get('show_process', '1') == '1' %}
   <section class="section process" id="admission">
     <div class="container">
       <div class="section-header">

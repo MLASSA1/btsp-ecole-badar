@@ -46,14 +46,15 @@
       <span></span><span></span><span></span>
     </button>
     <ul class="nav-links" id="navLinks">
-      <li><a href="{{ nav_prefix }}#accueil">{{ t.nav_home }}</a></li>
-      <li><a href="{{ nav_prefix }}#poles">{{ t.pillars_tag }}</a></li>
+      {# Ordered the way the page now reads: what a business buys first, the
+         school second. #}
+      <li><a href="{{ nav_prefix }}#services">{{ t.nav_pro }}</a></li>
+      <li><a href="{{ nav_prefix }}#catalogue">{{ t.nav_catalogue }}</a></li>
+      <li><a href="{{ nav_prefix }}#references">{{ t.nav_references }}</a></li>
       <li><a href="{{ nav_prefix }}#formations">{{ t.nav_formations }}</a></li>
       <li><a href="{{ nav_prefix }}#en-ligne">{{ t.nav_online }}</a></li>
-      <li><a href="{{ nav_prefix }}#services">{{ t.nav_pro }}</a></li>
       <li><a href="{{ nav_prefix }}#certificats">{{ t.nav_certificates }}</a></li>
-      <li><a href="{{ nav_prefix }}#galerie">{{ t.nav_gallery }}</a></li>
-      <li class="nav-links-cta"><a href="{{ nav_prefix }}#contact" class="btn btn-accent btn-sm">{{ t.nav_register }}</a></li>
+      <li class="nav-links-cta"><a href="{{ nav_prefix }}#pro-contact" class="btn btn-accent btn-sm">{{ t.nav_quote }}</a></li>
       <li class="nav-links-portal"><a href="/student/login">{{ t.nav_student_space }}</a></li>
     </ul>
   </div>
