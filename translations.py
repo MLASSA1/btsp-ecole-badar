@@ -212,7 +212,7 @@ TRANSLATIONS = {
         "btn_ask_info": "Demander des Informations",
         # Top bar & nav
         "hero_badge": "Formation professionnelle & conseil — Hôtellerie, Restauration, Agroalimentaire",
-        "topbar_note": "Établissement privé de formation professionnelle — Guelmim, Maroc",
+        "topbar_note": "Établissement privé de formation professionnelle — Agadir, Maroc",
         "nav_pro": "Services Pro",
         "nav_student_space": "Espace Étudiant",
         # Hero
@@ -425,7 +425,7 @@ TRANSLATIONS = {
         "process_title": "Votre Parcours en",
         "process_title_em": "Quatre Étapes",
         "process_1_title": "Candidature",
-        "process_1_text": "Remplissez le formulaire en ligne ou passez nous voir à Guelmim.",
+        "process_1_text": "Remplissez le formulaire en ligne ou passez nous voir à Agadir.",
         "process_2_title": "Entretien d'Orientation",
         "process_2_text": "Nous évaluons votre projet et vous conseillons la formation adaptée.",
         "process_3_title": "Inscription",
@@ -639,7 +639,7 @@ TRANSLATIONS = {
         "btn_ask_info": "Request Information",
         # Top bar & nav
         "hero_badge": "Professional training & consulting — Hospitality, Catering, Food industry",
-        "topbar_note": "Private vocational training institute — Guelmim, Morocco",
+        "topbar_note": "Private vocational training institute — Agadir, Morocco",
         "nav_pro": "Business Services",
         "nav_student_space": "Student Portal",
         # Hero
@@ -852,7 +852,7 @@ TRANSLATIONS = {
         "process_title": "Your Journey in",
         "process_title_em": "Four Steps",
         "process_1_title": "Application",
-        "process_1_text": "Fill in the online form or come and see us in Guelmim.",
+        "process_1_text": "Fill in the online form or come and see us in Agadir.",
         "process_2_title": "Guidance Interview",
         "process_2_text": "We review your goals and recommend the right program.",
         "process_3_title": "Enrolment",
@@ -1066,7 +1066,7 @@ TRANSLATIONS = {
         "btn_ask_info": "طلب معلومات",
         # الشريط العلوي والقائمة
         "hero_badge": "تكوين مهني واستشارة — الفندقة، المطعمة، الصناعة الغذائية",
-        "topbar_note": "مؤسسة خاصة للتكوين المهني — كلميم، المغرب",
+        "topbar_note": "مؤسسة خاصة للتكوين المهني — أكادير، المغرب",
         "nav_pro": "خدمات المهنيين",
         "nav_student_space": "فضاء الطالب",
         # الواجهة
@@ -1279,7 +1279,7 @@ TRANSLATIONS = {
         "process_title": "مسارك في",
         "process_title_em": "أربع خطوات",
         "process_1_title": "الترشيح",
-        "process_1_text": "املأ الاستمارة عبر الإنترنت أو زُرنا بكلميم.",
+        "process_1_text": "املأ الاستمارة عبر الإنترنت أو زُرنا بأكادير.",
         "process_2_title": "مقابلة التوجيه",
         "process_2_text": "نقيّم مشروعك ونقترح عليك التكوين المناسب.",
         "process_3_title": "التسجيل",

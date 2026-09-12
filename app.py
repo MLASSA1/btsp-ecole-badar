@@ -577,7 +577,7 @@ def init_db():
         "about_title": "Un Centre d'Excellence au Service de Votre Avenir",
         "about_text": "BTSP est un établissement privé de formation professionnelle au Maroc, spécialisé dans les arts culinaires, l'hôtellerie et les technologies de l'information. Notre pédagogie allie pratique intensive, expertise professionnelle et cours en ligne.",
         "about_text_2": "Notre centre offre un cadre moderne et professionnel, équipé des dernières technologies pour vous préparer aux exigences du marché national et international.",
-        "address": "شارع المقاومة بقرب من صيدلية المقاومة زنقة 07 طابق الثاني، كلميم",
+        "address": "Technopole 2, Agadir Bay, Agadir",
         "phone": "06.37.48.62.76",
         "phone_2": "06.50.51.58.44",
         "email": "contact@btsp.ma",
@@ -703,10 +703,10 @@ def init_db():
     count = db.execute("SELECT COUNT(*) FROM training_sessions").fetchone()[0]
     if count == 0:
         seed_sessions = [
-            ("Cake Design - Session Été", 1, "2026-06-15", "2026-12-15", 20, 12, "Guelmim", 1, "fr"),
-            ("Cloud & DevOps - Session Automne", 8, "2026-09-01", "2027-05-30", 15, 5, "Guelmim", 1, "fr"),
-            ("Pâtisserie Pro - Session Septembre", 2, "2026-09-15", "2027-09-15", 18, 8, "Guelmim", 1, "fr"),
-            ("Cybersécurité - Intensif", 9, "2026-07-01", "2026-12-30", 12, 3, "Guelmim / En ligne", 1, "fr"),
+            ("Cake Design - Session Été", 1, "2026-06-15", "2026-12-15", 20, 12, "Agadir", 1, "fr"),
+            ("Cloud & DevOps - Session Automne", 8, "2026-09-01", "2027-05-30", 15, 5, "Agadir", 1, "fr"),
+            ("Pâtisserie Pro - Session Septembre", 2, "2026-09-15", "2027-09-15", 18, 8, "Agadir", 1, "fr"),
+            ("Cybersécurité - Intensif", 9, "2026-07-01", "2026-12-30", 12, 3, "Agadir / En ligne", 1, "fr"),
         ]
         for s in seed_sessions:
             db.execute("INSERT INTO training_sessions (title, formation_id, start_date, end_date, spots_total, spots_taken, location, active, lang) VALUES (?,?,?,?,?,?,?,?,?)", s)
