@@ -162,7 +162,7 @@
       </div>
       <div class="corp-grid">
         {% for i in range(1, 10) %}
-        <article class="corp-card reveal">
+        <article class="corp-card">
           <span class="corp-num">{{ '%02d'|format(i) }}</span>
           <h3>{{ t['corp_' ~ i ~ '_title'] }}</h3>
           <ul class="corp-items">
@@ -191,7 +191,7 @@
       <div class="refs-grid">
         <ul class="refs-list">
           {% for i in range(1, 6) %}
-          <li class="reveal">
+          <li>
             <span class="refs-check">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             </span>
@@ -199,7 +199,7 @@
           </li>
           {% endfor %}
         </ul>
-        <aside class="refs-clients reveal">
+        <aside class="refs-clients">
           <h3>{{ t.exp_clients_title }}</h3>
           <ul>
             {% for i in range(1, 4) %}

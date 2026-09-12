@@ -150,7 +150,7 @@
       const img = sec.querySelector('.custom-section-image');
       if (img) img.setAttribute('data-anim', 'slide-left');
     });
-    const revealTargets = document.querySelectorAll('.pillar-card, .formation-card, .pro-card, .process-step, .cert-item, .testimonial-card, .gallery-item, .session-card, .about-content, .about-images, .contact-info, .contact-form-wrapper, .custom-section-content, .custom-section-image, .module-item, .outcome-item, .spec-row, .online-card');
+    const revealTargets = document.querySelectorAll('.pillar-card, .formation-card, .pro-card, .process-step, .cert-item, .testimonial-card, .gallery-item, .session-card, .about-content, .about-images, .contact-info, .contact-form-wrapper, .custom-section-content, .custom-section-image, .module-item, .outcome-item, .spec-row, .online-card, .corp-card, .refs-list li, .refs-clients');
     revealTargets.forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--i', i % 4); revealObserver.observe(el); });
 
     // Safety net: if the observer never fires (background tab, throttled
