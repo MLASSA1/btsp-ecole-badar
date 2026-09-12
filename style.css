@@ -1760,3 +1760,30 @@ h1 em, h2 em, h3 em {
   .corp-card { padding: 24px 22px 22px; }
   .corp-cta .btn { width: 100%; }
 }
+
+/* ---------- Training packs ---------- */
+.pack-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 16px;
+}
+.pack-dept {
+  font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.pack-card { display: flex; flex-direction: column; }
+.pack-card .corp-items { flex: 1; }
+.pack-link {
+  margin-top: 20px;
+  font-size: 0.86rem; font-weight: 600;
+  color: var(--blue-700);
+  border-bottom: 1px solid transparent;
+  align-self: flex-start;
+  transition: border-color var(--transition);
+}
+.pack-card:hover .pack-link { border-bottom-color: var(--blue-700); }
+.pack-note {
+  margin-top: 14px;
+  font-size: 0.86rem;
+  color: var(--ink-muted);
+}

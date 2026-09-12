@@ -1344,6 +1344,12 @@ def render_public(lang):
         ("business", "tab_business"),
         ("languages", "tab_languages"),
     ]
+    # The packs heading states how many there are; deriving it from the keys
+    # means adding a pack never leaves the title saying "sept" above nine cards.
+    pack_count = 0
+    while t.get("pack_%d_title" % (pack_count + 1)):
+        pack_count += 1
+
     present = {f["category"] for f in formations}
     category_tabs = [
         {"key": key, "label": t.get(label_key, key)}
@@ -1413,6 +1419,7 @@ def render_public(lang):
         settings=settings,
         formations=formations,
         category_tabs=category_tabs,
+        pack_count=pack_count,
         certificates=certificates,
         testimonials=testimonials,
         gallery=gallery,

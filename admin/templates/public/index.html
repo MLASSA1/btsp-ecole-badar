@@ -149,32 +149,37 @@
 
   <!-- Admission process -->
   {% if settings.get('show_process', '1') == '1' %}
-  <!-- Corporate training catalogue: the nine modules an employer actually buys.
-       Placed directly after the professional services because a hotel or
-       restaurant reading this page wants the curriculum, not the student
-       prospectus. -->
+  <!-- Seven packs, one per department. A buyer picks the pack that matches the
+       team they need trained rather than assembling individual topics, which
+       is why these replaced the module-by-module catalogue. -->
   <section class="section corp" id="catalogue">
     <div class="container">
       <div class="section-header">
-        <span class="section-tag">{{ t.corp_tag }}</span>
-        <h2>{{ t.corp_title }} <em>{{ t.corp_title_em }}</em></h2>
-        <p>{{ t.corp_text }}</p>
+        <span class="section-tag">{{ t.pack_tag }}</span>
+        <h2>{{ pack_count }} {{ t.pack_title }} <em>{{ t.pack_title_em }}</em></h2>
+        <p>{{ t.pack_text }}</p>
       </div>
       <div class="corp-grid">
-        {% for i in range(1, 10) %}
-        <article class="corp-card">
-          <span class="corp-num">{{ '%02d'|format(i) }}</span>
-          <h3>{{ t['corp_' ~ i ~ '_title'] }}</h3>
+        {% for i in range(1, pack_count + 1) %}
+        <article class="corp-card pack-card">
+          <div class="pack-head">
+            <span class="corp-num">{{ t.pack_label }} {{ i }}</span>
+            <span class="pack-dept">{{ t['pack_' ~ i ~ '_dept'] }}</span>
+          </div>
+          <h3>{{ t['pack_' ~ i ~ '_title'] }}</h3>
           <ul class="corp-items">
-            {% for j in range(1, 5) %}
-            <li>{{ t['corp_' ~ i ~ '_item_' ~ j] }}</li>
+            {% for j in range(1, 13) %}
+            {% set point = t.get('pack_' ~ i ~ '_item_' ~ j) %}
+            {% if point %}<li>{{ point }}</li>{% endif %}
             {% endfor %}
           </ul>
+          <a href="#pro-contact" class="pack-link">{{ t.pack_cta }}</a>
         </article>
         {% endfor %}
       </div>
       <div class="corp-cta">
-        <a href="#pro-contact" class="btn btn-accent btn-lg">{{ t.corp_cta }}</a>
+        <a href="#pro-contact" class="btn btn-accent btn-lg">{{ t.pack_cta }}</a>
+        <p class="pack-note">{{ t.pack_note }}</p>
       </div>
     </div>
   </section>
