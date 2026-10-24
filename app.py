@@ -3022,6 +3022,10 @@ def admin_course_delete(id):
 def admin_modules(course_id):
     db = get_db()
     course = db.execute("SELECT * FROM courses WHERE id=?", (course_id,)).fetchone()
+    if not course:
+        # A stale link or a deleted course used to crash the page with a 500.
+        flash("Ce cours n'existe pas ou a été supprimé.", "error")
+        return redirect(url_for("admin_courses"))
     modules = db.execute("SELECT * FROM course_modules WHERE course_id=? ORDER BY sort_order", (course_id,)).fetchall()
     return render_template("admin/modules.html", course=course, modules=modules)
 
@@ -3079,6 +3083,11 @@ def admin_module_delete(id):
 def admin_quizzes(module_id):
     db = get_db()
     module = db.execute("SELECT * FROM course_modules WHERE id=?", (module_id,)).fetchone()
+    if not module:
+        # Checked before the POST branch: otherwise a question could be saved
+        # against a module that does not exist, and the GET crashed with a 500.
+        flash("Ce module n'existe pas ou a été supprimé.", "error")
+        return redirect(url_for("admin_courses"))
     if request.method == "POST":
         db.execute(
             "INSERT INTO quizzes (module_id, question, option_a, option_b, option_c, option_d, correct_answer, sort_order) VALUES (?,?,?,?,?,?,?,?)",
@@ -3118,6 +3127,8 @@ def admin_students():
 def admin_student_progress(id):
     db = get_db()
     student = db.execute("SELECT * FROM students WHERE id=?", (id,)).fetchone()
+    if not student:
+        abort(404)
     enrollments = db.execute("""
         SELECT se.*, c.title as course_title,
             (SELECT COUNT(*) FROM course_modules WHERE course_id=c.id) as total_modules,
