@@ -165,6 +165,12 @@ def _load_secret_key():
 
 
 app.config["SECRET_KEY"] = _load_secret_key()
+
+# nginx terminates TLS and forwards plain HTTP, so without this Flask builds
+# every redirect as http:// — one more hop for each, and a plaintext URL handed
+# to the browser. Trust exactly one proxy hop for scheme and host.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 # SameSite=Lax stops the browser sending session cookies on cross-site POSTs,
 # which is what a CSRF attack needs.
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -1307,6 +1313,76 @@ def asset_version():
             stamp = 0
         return f"/static-site/{filename}?v={stamp}"
     return {"asset": asset}
+
+
+# Crawler and browser files. These need explicit routes: otherwise the
+# "/<lang>/" rule claims them — "/robots.txt" was read as a language called
+# "robots.txt", redirected to "/robots.txt/" and answered 404. Search engines
+# never found either file, and every request cost a redirect on the way.
+
+@app.route("/robots.txt")
+def robots_txt():
+    base = request.url_root.rstrip("/")
+    body = "\n".join([
+        "User-agent: *",
+        "Allow: /",
+        # The back-office and the student area are behind a login and have
+        # nothing a search result should point at.
+        "Disallow: /admin/",
+        "Disallow: /student/",
+        "",
+        "Sitemap: %s/sitemap.xml" % base,
+        "",
+    ])
+    return app.response_class(body, mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    db = get_db()
+    base = request.url_root.rstrip("/")
+    today = date.today().isoformat()
+    urls = []
+    # Home in each language, with hreflang alternates so Google serves the
+    # right one rather than treating three copies as duplicates.
+    homes = {"fr": base + "/", "en": base + "/en/", "ar": base + "/ar/"}
+    for lang, loc in homes.items():
+        urls.append((loc, "1.0", homes))
+    for row in db.execute("SELECT id FROM formations WHERE active = 1 ORDER BY id").fetchall():
+        alt = {
+            "fr": "%s/formation/%d" % (base, row["id"]),
+            "en": "%s/en/formation/%d" % (base, row["id"]),
+            "ar": "%s/ar/formation/%d" % (base, row["id"]),
+        }
+        for lang, loc in alt.items():
+            urls.append((loc, "0.7", alt))
+
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+             'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
+    for loc, priority, alternates in urls:
+        parts.append("  <url>")
+        parts.append("    <loc>%s</loc>" % escape(loc))
+        for lang, href in alternates.items():
+            parts.append('    <xhtml:link rel="alternate" hreflang="%s" href="%s"/>' % (lang, escape(href)))
+        parts.append("    <lastmod>%s</lastmod>" % today)
+        parts.append("    <priority>%s</priority>" % priority)
+        parts.append("  </url>")
+    parts.append("</urlset>")
+    return app.response_class("\n".join(parts) + "\n", mimetype="application/xml")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(BASE_DIR, "favicon.ico", mimetype="image/vnd.microsoft.icon",
+                               max_age=60 * 60 * 24 * 30)
+
+
+@app.route("/apple-touch-icon.png")
+@app.route("/apple-touch-icon-precomposed.png")
+def apple_touch_icon():
+    return send_from_directory(BASE_DIR, "apple-touch-icon.png", mimetype="image/png",
+                               max_age=60 * 60 * 24 * 30)
 
 
 @app.route("/")
