@@ -3617,10 +3617,22 @@ def admin_pupil_edit(id):
 @login_required
 def admin_pupil_delete(id):
     db = get_db()
-    db.execute("DELETE FROM payments WHERE student_id=?", (id,))
-    db.execute("DELETE FROM class_students WHERE id=?", (id,))
-    db.commit()
-    flash("Élève supprimé.", "success")
+    # Deleting a pupil used to delete every payment they had made with them.
+    # Those are the school's accounting records — still needed for receipts,
+    # disputes and the books after a pupil leaves — and production lost about
+    # half its payment history this way in a month. A pupil with payments is
+    # archived instead: gone from the current lists, history intact. One with
+    # no payments has nothing to lose and is still removed outright.
+    paid = db.execute("SELECT COUNT(*) FROM payments WHERE student_id=?", (id,)).fetchone()[0]
+    if paid:
+        db.execute("UPDATE class_students SET active = 0 WHERE id=?", (id,))
+        db.commit()
+        flash("Élève archivé : son historique de %d paiement%s est conservé."
+              % (paid, "s" if paid != 1 else ""), "success")
+    else:
+        db.execute("DELETE FROM class_students WHERE id=?", (id,))
+        db.commit()
+        flash("Élève supprimé.", "success")
     return redirect(url_for("admin_pupils"))
 
 
