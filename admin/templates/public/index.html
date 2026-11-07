@@ -10,13 +10,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ settings.get('site_name', 'BTSP') }} — {{ settings.get('site_name_full', 'École BADAR Training and Service') }}</title>
   <meta name="description" content="{{ settings.get('site_tagline', '') }}">
-  <meta name="theme-color" content="#1E3FD0">
+  <meta name="theme-color" content="#0B1B33">
   <meta property="og:title" content="{{ settings.get('site_name_full', 'BTSP') }}">
   <meta property="og:description" content="{{ settings.get('site_tagline', '') }}">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   {% if lang == 'ar' %}
   <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% endif %}
@@ -230,7 +230,7 @@
       <div class="pillars-grid">
         <article class="pillar-card" data-goto="culinary">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=760&h=520&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <img src="/uploads/pole-cuisine.jpg" alt="{{ t.pillar_1_title }}" loading="lazy">
             <span class="pillar-index">01</span>
           </div>
           <div class="pillar-body">
@@ -246,7 +246,7 @@
         </article>
         <article class="pillar-card" data-goto="hospitality">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=760&h=520&fit=crop" alt="{{ t.pillar_2_title }}" loading="lazy">
+            <img src="/uploads/pole-hotellerie.jpg" alt="{{ t.pillar_2_title }}" loading="lazy">
             <span class="pillar-index">02</span>
           </div>
           <div class="pillar-body">
@@ -262,7 +262,7 @@
         </article>
         <article class="pillar-card" data-goto="business">
           <div class="pillar-media">
-            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=760&h=520&fit=crop" alt="{{ t.pillar_3_title }}" loading="lazy">
+            <img src="/uploads/pole-gestion.jpg" alt="{{ t.pillar_3_title }}" loading="lazy">
             <span class="pillar-index">03</span>
           </div>
           <div class="pillar-body">
@@ -310,10 +310,10 @@
       <div class="about-grid">
         <div class="about-images">
           <div class="about-img about-img-1">
-            <img src="https://images.unsplash.com/photo-1543269865-cbf427effbad?w=620&h=780&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
+            <img src="/uploads/about-audit.jpg" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-img about-img-2">
-            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=420&h=560&fit=crop" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
+            <img src="/uploads/about-housekeeping.jpg" alt="{{ settings.get('site_name', 'BTSP') }}" loading="lazy">
           </div>
           <div class="about-float-card">
             <span class="float-number">{{ settings.get('years_experience', '12') }}</span>
