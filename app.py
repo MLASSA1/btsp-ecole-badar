@@ -1397,6 +1397,14 @@ def index_lang(lang):
     return render_public(lang)
 
 
+STATE_DIPLOMA_PATTERN = re.compile(r"(?:é|e)tat|state|الدولة", re.IGNORECASE)
+
+
+def is_state_diploma(diploma_type):
+    """True for a diploma type such as "Diplôme d'État" or "State diploma"."""
+    return bool(diploma_type and STATE_DIPLOMA_PATTERN.search(diploma_type))
+
+
 def render_public(lang):
     db = get_db()
     settings = get_settings()
@@ -1432,6 +1440,13 @@ def render_public(lang):
         for key, label_key in CATEGORY_TABS
         if key in present
     ]
+    # "Diplômes reconnus par l'État" cuts across the pôles: a state cuisine
+    # diploma stays under Culinaire and also appears here. It is read from the
+    # diploma type the admin already fills in, so marking a programme
+    # "Diplôme d'État" is all it takes to list it.
+    state_ids = {f["id"] for f in formations if is_state_diploma(f["diploma_type"])}
+    if state_ids:
+        category_tabs.insert(0, {"key": "state", "label": t.get("tab_state", "state")})
 
     certificates = db.execute(
         "SELECT * FROM certificates WHERE active = 1 AND lang = ? ORDER BY sort_order",
@@ -1495,6 +1510,7 @@ def render_public(lang):
         settings=settings,
         formations=formations,
         category_tabs=category_tabs,
+        state_ids=state_ids,
         pack_count=pack_count,
         certificates=certificates,
         testimonials=testimonials,

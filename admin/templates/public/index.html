@@ -370,7 +370,7 @@
       </div>
       <div class="formations-grid">
         {% for f in formations %}
-        <article class="formation-card {% if f.featured %}featured{% endif %}" data-category="{{ f.category }}">
+        <article class="formation-card {% if f.featured %}featured{% endif %}" data-category="{{ f.category }}"{% if f.id in state_ids %} data-state="1"{% endif %}>
           {# Covers the whole card so the entire tile is clickable; the visible
              "learn more" affordance below is the same destination. #}
           <a class="card-link" href="{{ formation_url_base }}{{ f.id }}" aria-label="{{ f.title }}"></a>
@@ -1004,7 +1004,8 @@
       });
       let shown = 0;
       cards.forEach(card => {
-        const visible = cat === 'all' || card.dataset.category === cat;
+        const visible = cat === 'all' || card.dataset.category === cat
+          || (cat === 'state' && card.dataset.state === '1');
         card.hidden = !visible;
         if (visible) shown++;
       });

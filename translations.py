@@ -50,6 +50,7 @@ TRANSLATIONS = {
         "formations_title_em": "Parcours",
         "formations_text": "Des programmes complets conçus pour vous mener vers l'excellence professionnelle",
         "tab_all": "Tout",
+        "tab_state": "Diplômes reconnus par l'État",
         "tab_culinary": "Culinaire",
         "tab_it": "IT & Tech",
         "tab_hospitality": "Hôtellerie",
@@ -159,7 +160,7 @@ TRANSLATIONS = {
         "formations_empty": "Aucune formation dans cette catégorie pour le moment.",
         # --- Catégories de formations ---
         "tab_health": "Santé & Social",
-        "tab_business": "Gestion & Numérique",
+        "tab_business": "Gestion & Commerce",
         "tab_languages": "Langues",
         # --- Online courses ---
         "nav_online": "En Ligne",
@@ -487,6 +488,7 @@ TRANSLATIONS = {
         "formations_title_em": "Path",
         "formations_text": "Comprehensive programs designed to lead you to professional excellence",
         "tab_all": "All",
+        "tab_state": "State-recognised diplomas",
         "tab_culinary": "Culinary",
         "tab_it": "IT & Tech",
         "tab_hospitality": "Hospitality",
@@ -586,7 +588,7 @@ TRANSLATIONS = {
         "formations_empty": "No programs in this category yet.",
         # --- Programme categories ---
         "tab_health": "Health & Care",
-        "tab_business": "Business & Digital",
+        "tab_business": "Management & Sales",
         "tab_languages": "Languages",
         # --- Online courses ---
         "nav_online": "Online",
@@ -914,6 +916,7 @@ TRANSLATIONS = {
         "formations_title_em": "مسارك",
         "formations_text": "برامج شاملة مصممة لقيادتك نحو التميز المهني",
         "tab_all": "الكل",
+        "tab_state": "شهادات معترف بها من طرف الدولة",
         "tab_culinary": "الطبخ",
         "tab_it": "تكنولوجيا المعلومات",
         "tab_hospitality": "الفندقة",
@@ -1013,7 +1016,7 @@ TRANSLATIONS = {
         "formations_empty": "لا توجد تكوينات في هذه الفئة حالياً.",
         # --- أصناف التكوينات ---
         "tab_health": "الصحة والاجتماع",
-        "tab_business": "التدبير والرقمنة",
+        "tab_business": "التدبير والتجارة",
         "tab_languages": "اللغات",
         # --- الدروس عن بعد ---
         "nav_online": "عن بُعد",
