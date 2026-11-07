@@ -9,6 +9,7 @@ uploads/*
 !uploads/diplome-btsp.jpg
 # Site photography generated for the Nov 2026 redesign.
 !uploads/hero-btsp.jpg
+!uploads/hero-btsp-wide.jpg
 !uploads/pole-cuisine.jpg
 !uploads/pole-hotellerie.jpg
 !uploads/pole-gestion.jpg
