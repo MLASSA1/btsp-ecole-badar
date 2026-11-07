@@ -50,10 +50,17 @@ ssh visionxart '
   git rev-parse --short HEAD          # confirm this is the commit you meant
   docker build -t ghcr.io/visionxartorg/btsp-ecole-badar:latest .
   docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest
-  cd /opt/clients/btsp-ecole-badar && docker compose up -d
+  cd /opt/clients/btsp-ecole-badar && docker compose up -d --force-recreate
 '
 ./verify-deploy.sh
 ```
+
+`--force-recreate` matters: a plain `docker compose up -d` has been seen to
+leave the old container running after a rebuild of the same `:latest` tag,
+which looks like a successful deploy while the site still serves the
+previous release. `verify-deploy.sh` and a look at
+`docker inspect -f '{{.State.StartedAt}}' btsp` confirm the swap.
+
 
 Check the commit the server prints before trusting the build. `set -e` does
 not abort on a failure inside an `&&` chain, which is how a failed fetch
@@ -94,7 +101,7 @@ Each release tags the previous image, so a bad deploy is one command:
 docker tag ghcr.io/visionxartorg/btsp-ecole-badar:rollback-YYYYMMDD \
            ghcr.io/visionxartorg/btsp-ecole-badar:latest
 docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest
-cd /opt/clients/btsp-ecole-badar && docker compose up -d
+cd /opt/clients/btsp-ecole-badar && docker compose up -d --force-recreate
 ```
 
 ## First admin account

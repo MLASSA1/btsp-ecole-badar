@@ -79,6 +79,6 @@ else
     echo "  cd /opt/build/btsp-ecole-badar && git pull"
     echo "  docker build -t ghcr.io/visionxartorg/btsp-ecole-badar:latest ."
     echo "  docker push ghcr.io/visionxartorg/btsp-ecole-badar:latest"
-    echo "  cd /opt/clients/btsp-ecole-badar && docker compose up -d"
+    echo "  cd /opt/clients/btsp-ecole-badar && docker compose up -d --force-recreate"
     exit 1
 fi
