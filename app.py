@@ -1434,17 +1434,21 @@ def render_public(lang):
     while t.get("pack_%d_title" % (pack_count + 1)):
         pack_count += 1
 
-    present = {f["category"] for f in formations}
-    category_tabs = [
-        {"key": key, "label": t.get(label_key, key)}
-        for key, label_key in CATEGORY_TABS
-        if key in present
-    ]
     # "Diplômes reconnus par l'État" cuts across the pôles: a state cuisine
     # diploma stays under Culinaire and also appears here. It is read from the
     # diploma type the admin already fills in, so marking a programme
     # "Diplôme d'État" is all it takes to list it.
     state_ids = {f["id"] for f in formations if is_state_diploma(f["diploma_type"])}
+    # A pôle earns its own tab (and its pôle card) only through programmes the
+    # state tab does not already list. Aide-Soignant is published on its own,
+    # without bringing back the Santé pôle the rest of that catalogue was
+    # hidden with; publish another health programme and Santé returns.
+    present = {f["category"] for f in formations if f["id"] not in state_ids}
+    category_tabs = [
+        {"key": key, "label": t.get(label_key, key)}
+        for key, label_key in CATEGORY_TABS
+        if key in present
+    ]
     if state_ids:
         category_tabs.insert(0, {"key": "state", "label": t.get("tab_state", "state")})
 
