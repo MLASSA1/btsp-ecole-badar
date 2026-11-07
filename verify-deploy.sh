@@ -68,6 +68,30 @@ for i in 1 2 3 4 5 6 7; do
 done
 check "brute-force cap (7th attempt)" "$last" 429
 
+# Those failures also count against this machine's address, which is the
+# owner's own network: two runs within 15 minutes locked the real admin out
+# of the login page. Remove exactly what the probe recorded.
+if [ "$SITE" = "https://btspformation.com" ]; then
+    # Each failed login writes an address row and a username row a few
+    # milliseconds apart; delete the probe's username rows and only the
+    # address rows written alongside them, so real attempts stay counted.
+    if ssh -o BatchMode=yes -o ConnectTimeout=20 visionxart "docker exec -i btsp python -" 2>/dev/null <<PY
+import sqlite3
+c = sqlite3.connect("/data/database.db")
+stamps = [r[0] for r in c.execute("SELECT ts FROM auth_attempts WHERE bucket = ?", ("admin-user:$probe",))]
+for ts in stamps:
+    c.execute("DELETE FROM auth_attempts WHERE bucket LIKE 'admin-ip:%' AND ts BETWEEN ? AND ?", (ts - 0.05, ts + 0.05))
+c.execute("DELETE FROM auth_attempts WHERE bucket = ?", ("admin-user:$probe",))
+c.commit()
+PY
+    then
+        printf '  ok    %-42s %s\n' "probe attempts cleaned up" "admin login not locked"
+    else
+        echo "  WARN  could not clean up the probe: the admin login from this network"
+        echo "        stays locked for 15 minutes (or clear auth_attempts on the server)."
+    fi
+fi
+
 echo ""
 # Every published programme should carry its own photo. Counting cards against
 # distinct images catches a duplicate or a missing one without hard-coding a
