@@ -766,6 +766,16 @@ def migrate_db():
         "ALTER TABLE school_classes ADD COLUMN kind TEXT NOT NULL DEFAULT 'annual'",
         "ALTER TABLE school_classes ADD COLUMN duration_label TEXT DEFAULT ''",
         "ALTER TABLE school_classes ADD COLUMN price REAL DEFAULT 0",
+        # Online courses are private and paid. A registration starts 'pending';
+        # the live-class link and the modules open only once an admin records
+        # the payment ('paid'). Registrations made while access was free become
+        # pending too, so nobody keeps the link without having paid.
+        "ALTER TABLE courses ADD COLUMN price REAL DEFAULT 0",
+        "ALTER TABLE student_enrollments ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'",
+        "ALTER TABLE student_enrollments ADD COLUMN paid_amount REAL DEFAULT 0",
+        "ALTER TABLE student_enrollments ADD COLUMN paid_method TEXT DEFAULT ''",
+        "ALTER TABLE student_enrollments ADD COLUMN paid_at TIMESTAMP",
+        "ALTER TABLE student_enrollments ADD COLUMN payment_note TEXT DEFAULT ''",
     ]
     if USE_PG:
         # Postgres aborts the whole transaction on a failed statement, so each
@@ -1043,6 +1053,18 @@ def enrolled_by(enrolled_on, year, month):
     if not (1900 <= enrolled_year <= 2200) or not (1 <= enrolled_month <= 12):
         return True
     return (year, month) >= (enrolled_year, enrolled_month)
+
+
+def form_money(name, default=0.0):
+    """A non-negative amount in dirhams from the form; junk, NaN and inf -> default."""
+    raw = (request.form.get(name) or "").strip().replace(",", ".")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return default
+    if value != value or value in (float("inf"), float("-inf")):
+        return default
+    return round(min(max(value, 0.0), 1_000_000.0), 2)
 
 
 def form_int(name, default=0, minimum=None, maximum=None):
@@ -1348,6 +1370,12 @@ def sitemap_xml():
     homes = {"fr": base + "/", "en": base + "/en/", "ar": base + "/ar/"}
     for lang, loc in homes.items():
         urls.append((loc, "1.0", homes))
+    for slug in PUBLIC_PAGES:
+        if slug == "home":
+            continue
+        alt = {l: base + lang_prefix(l) + "/" + slug for l in ("fr", "en", "ar")}
+        for lang, loc in alt.items():
+            urls.append((loc, "0.8", alt))
     for row in db.execute("SELECT id FROM formations WHERE active = 1 ORDER BY id").fetchall():
         alt = {
             "fr": "%s/formation/%d" % (base, row["id"]),
@@ -1385,16 +1413,70 @@ def apple_touch_icon():
                                max_age=60 * 60 * 24 * 30)
 
 
+# The public site is a set of pages built from shared section blocks in
+# templates/public/sections/. Each page lists the blocks it shows, in order;
+# "label" is the translation key used for the menu, the page title and the
+# breadcrumb. The same slug serves every language: /services, /en/services.
+PUBLIC_PAGES = {
+    "home": {"label": "nav_home", "sections": [
+        "hero", "state_diplomas", "services", "catalogue", "references",
+        "pillars", "about", "testimonials", "partners", "custom", "cta_band"]},
+    "services": {"label": "nav_pro", "sections": ["services", "references", "cta_band"]},
+    "catalogue": {"label": "nav_catalogue", "sections": ["catalogue", "cta_band"]},
+    "references": {"label": "nav_references", "sections": ["references", "partners", "testimonials", "cta_band"]},
+    "formations": {"label": "nav_formations", "sections": ["state_diplomas", "pillars", "formations", "sessions", "process"]},
+    "en-ligne": {"label": "nav_online", "sections": ["online"]},
+    "certificats": {"label": "nav_certificates", "sections": ["certificates"]},
+    "a-propos": {"label": "nav_about", "sections": ["about", "gallery", "testimonials", "partners"]},
+    "contact": {"label": "nav_contact", "sections": ["contact", "faq"]},
+    "devis": {"label": "nav_quote", "sections": ["devis"]},
+}
+
+
 @app.route("/")
 def index_default():
-    return render_public("fr")
+    return render_page("fr", "home")
 
 
 @app.route("/<lang>/")
 def index_lang(lang):
     if lang not in SUPPORTED_LANGS:
         abort(404)
-    return render_public(lang)
+    return render_page(lang, "home")
+
+
+@app.route("/<slug>")
+def page_default(slug):
+    # "/en" without its slash would otherwise land here and 404.
+    if slug in SUPPORTED_LANGS:
+        return redirect("/%s/" % slug, code=301)
+    if slug not in PUBLIC_PAGES or slug == "home":
+        abort(404)
+    return render_page("fr", slug)
+
+
+@app.route("/<lang>/<slug>")
+def page_lang(lang, slug):
+    if lang not in SUPPORTED_LANGS or slug not in PUBLIC_PAGES or slug == "home":
+        abort(404)
+    if lang == "fr":
+        return redirect("/" + slug, code=301)
+    return render_page(lang, slug)
+
+
+def lang_prefix(lang):
+    """URL prefix for a language: '' for French, '/en' or '/ar' otherwise."""
+    return "" if lang == "fr" else "/" + lang
+
+
+# B2B offers the admin can switch off (Réglages → Offre B2B). Stored as one
+# comma-separated setting so no migration is needed; templates receive only
+# the visible numbers and renumber them, so a hidden item leaves no gap.
+PRO_SERVICE_COUNT = 4
+
+
+def b2b_hidden(settings):
+    return {x.strip() for x in (settings.get("b2b_hidden") or "").split(",") if x.strip()}
 
 
 STATE_DIPLOMA_PATTERN = re.compile(r"(?:é|e)tat|state|الدولة", re.IGNORECASE)
@@ -1405,7 +1487,7 @@ def is_state_diploma(diploma_type):
     return bool(diploma_type and STATE_DIPLOMA_PATTERN.search(diploma_type))
 
 
-def render_public(lang):
+def public_context(lang):
     db = get_db()
     settings = get_settings()
     t = TRANSLATIONS.get(lang, TRANSLATIONS[DEFAULT_LANG])
@@ -1509,13 +1591,19 @@ def render_public(lang):
         ).fetchall()
     hero_title = settings.get(f"hero_title_{lang}", t.get("hero_title", ""))
     hero_subtitle = settings.get(f"hero_subtitle_{lang}", t.get("hero_subtitle", ""))
-    return render_template(
-        "public/index.html",
+    hidden = b2b_hidden(settings)
+    pro_items = [i for i in range(1, PRO_SERVICE_COUNT + 1) if "pro_%d" % i not in hidden]
+    pack_items = [i for i in range(1, pack_count + 1) if "pack_%d" % i not in hidden]
+    state_formations = [f for f in formations if f["id"] in state_ids]
+    return dict(
         settings=settings,
         formations=formations,
         category_tabs=category_tabs,
         state_ids=state_ids,
-        pack_count=pack_count,
+        state_formations=state_formations,
+        pack_count=len(pack_items),
+        pack_items=pack_items,
+        pro_items=pro_items,
         certificates=certificates,
         testimonials=testimonials,
         gallery=gallery,
@@ -1528,8 +1616,16 @@ def render_public(lang):
         hero_subtitle=hero_subtitle,
         t=t,
         lang=lang,
+        lp=lang_prefix(lang),
         supported_langs=SUPPORTED_LANGS,
     )
+
+
+def render_page(lang, page):
+    ctx = public_context(lang)
+    ctx.update(page=page, page_conf=PUBLIC_PAGES[page],
+               sections=PUBLIC_PAGES[page]["sections"])
+    return render_template("public/page.html", **ctx)
 
 
 @app.route("/formation/<int:formation_id>")
@@ -1585,8 +1681,12 @@ def render_formation(formation_id, lang):
         sessions=sessions,
         faqs=faqs,
         formations=all_formations,
+        pro_items=[i for i in range(1, PRO_SERVICE_COUNT + 1)
+                   if "pro_%d" % i not in b2b_hidden(settings)],
+        page="formations",
         t=t,
         lang=lang,
+        lp=lang_prefix(lang),
         supported_langs=SUPPORTED_LANGS,
     )
 
@@ -1977,6 +2077,56 @@ def admin_formation_toggle(id):
     db.execute("UPDATE formations SET active = CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=?", (id,))
     db.commit()
     return redirect(url_for("admin_formations"))
+
+
+# --------------- Admin: what the public site offers ---------------
+#
+# One page to switch on or off everything a visitor can be sold: the
+# state-recognised diplomas and the B2B services and training packs. A hidden
+# item disappears from every public page and the rest close ranks: grids
+# re-flow and packs are renumbered (see public_context).
+
+@app.route("/admin/offre", methods=["GET", "POST"])
+@super_required
+def admin_offer():
+    db = get_db()
+    settings = get_settings()
+    if request.method == "POST":
+        kind = request.form.get("kind", "")
+        item = request.form.get("item", "")
+        if kind == "formation" and item.isdigit():
+            db.execute("UPDATE formations SET active = CASE WHEN active = 1 THEN 0 ELSE 1 END WHERE id = ?",
+                       (int(item),))
+            db.commit()
+        elif kind in ("pro", "pack") and item.isdigit():
+            hidden = b2b_hidden(settings)
+            key = "%s_%d" % (kind, int(item))
+            hidden.symmetric_difference_update({key})
+            db.execute(
+                "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                ("b2b_hidden", ",".join(sorted(hidden))),
+            )
+            db.commit()
+        else:
+            flash("Action inconnue.", "error")
+        return redirect(url_for("admin_offer") + "#" + kind)
+
+    t = TRANSLATIONS[DEFAULT_LANG]
+    hidden = b2b_hidden(settings)
+    diplomas = [f for f in db.execute(
+        "SELECT id, title, diploma_type, duration, image, active, category FROM formations "
+        "ORDER BY active DESC, sort_order").fetchall() if is_state_diploma(f["diploma_type"])]
+    services = [{"n": i, "title": t.get("pro_%d_title" % i, ""), "desc": t.get("pro_%d_desc" % i, ""),
+                 "visible": "pro_%d" % i not in hidden}
+                for i in range(1, PRO_SERVICE_COUNT + 1)]
+    pack_total = 0
+    while t.get("pack_%d_title" % (pack_total + 1)):
+        pack_total += 1
+    packs = [{"n": i, "title": t.get("pack_%d_title" % i, ""), "dept": t.get("pack_%d_dept" % i, ""),
+              "visible": "pack_%d" % i not in hidden}
+             for i in range(1, pack_total + 1)]
+    return render_template("admin/offer.html", diplomas=diplomas, services=services, packs=packs)
 
 
 # --------------- Admin: Certificates CRUD ---------------
@@ -2647,11 +2797,15 @@ def module_access(module_id):
         flash("Ce module n'existe pas.", "error")
         return None, redirect(url_for("student_courses"))
     enrolled = db.execute(
-        "SELECT 1 FROM student_enrollments WHERE student_id=? AND course_id=?",
+        "SELECT status FROM student_enrollments WHERE student_id=? AND course_id=?",
         (g.student["id"], module["course_id"]),
     ).fetchone()
     if not enrolled:
         flash("Inscrivez-vous à ce cours pour accéder à son contenu.", "warning")
+        return None, redirect(url_for("student_course", course_id=module["course_id"]))
+    if enrolled["status"] != "paid":
+        # Videos, materials and quizzes are part of what is paid for.
+        flash("Le contenu de ce cours s'ouvre dès que votre paiement est confirmé.", "warning")
         return None, redirect(url_for("student_course", course_id=module["course_id"]))
     return module, None
 
@@ -2816,7 +2970,8 @@ def student_dashboard():
     db = get_db()
     student = g.student
     enrollments = db.execute("""
-        SELECT se.*, c.title, c.image, c.category, c.meet_link,
+        SELECT se.*, c.title, c.image, c.category, c.price,
+            CASE WHEN se.status = 'paid' THEN c.meet_link ELSE '' END AS meet_link,
             (SELECT COUNT(*) FROM course_modules WHERE course_id=c.id) as total_modules,
             (SELECT COUNT(*) FROM student_progress sp JOIN course_modules cm ON sp.module_id=cm.id
              WHERE sp.student_id=? AND cm.course_id=c.id AND sp.completed=1) as completed_modules
@@ -2838,8 +2993,11 @@ def student_dashboard():
 def student_courses():
     db = get_db()
     courses = db.execute("SELECT * FROM courses WHERE active = 1 ORDER BY created_at DESC").fetchall()
-    enrolled_ids = [r["course_id"] for r in db.execute("SELECT course_id FROM student_enrollments WHERE student_id=?", (g.student["id"],)).fetchall()]
-    return render_template("student/courses.html", courses=courses, enrolled_ids=enrolled_ids, student=g.student)
+    rows = db.execute("SELECT course_id, status FROM student_enrollments WHERE student_id=?", (g.student["id"],)).fetchall()
+    enrolled_ids = [r["course_id"] for r in rows]
+    paid_ids = [r["course_id"] for r in rows if r["status"] == "paid"]
+    return render_template("student/courses.html", courses=courses, enrolled_ids=enrolled_ids,
+                           paid_ids=paid_ids, student=g.student)
 
 
 @app.route("/student/enroll/<int:course_id>", methods=["POST"])
@@ -2853,9 +3011,11 @@ def student_enroll(course_id):
     existing = db.execute("SELECT id FROM student_enrollments WHERE student_id=? AND course_id=?", (g.student["id"], course_id)).fetchone()
     if not existing:
         try:
-            db.execute("INSERT INTO student_enrollments (student_id, course_id) VALUES (?,?)", (g.student["id"], course_id))
+            db.execute("INSERT INTO student_enrollments (student_id, course_id, status) VALUES (?,?,'pending')",
+                       (g.student["id"], course_id))
             db.commit()
-            flash("Vous êtes inscrit au cours !", "success")
+            flash("Inscription enregistrée. L'accès au cours et au lien du live s'ouvre dès "
+                  "que l'école confirme votre paiement.", "success")
         except Exception:
             # Two rapid clicks race between the check above and this insert;
             # the unique index settles it, and being enrolled twice is not an
@@ -2879,11 +3039,19 @@ def student_course(course_id):
         flash("Vous devez d'abord vous inscrire à ce cours.", "error")
         return redirect(url_for("student_courses"))
     modules = db.execute("SELECT * FROM course_modules WHERE course_id = ? ORDER BY sort_order", (course_id,)).fetchall()
+    paid = enrollment["status"] == "paid"
     progress = {}
-    for m in modules:
-        p = db.execute("SELECT * FROM student_progress WHERE student_id=? AND module_id=?", (g.student["id"], m["id"])).fetchone()
-        progress[m["id"]] = p
-    return render_template("student/course.html", course=course, modules=modules, progress=progress, enrollment=enrollment, student=g.student)
+    if paid:
+        for m in modules:
+            p = db.execute("SELECT * FROM student_progress WHERE student_id=? AND module_id=?", (g.student["id"], m["id"])).fetchone()
+            progress[m["id"]] = p
+    settings = get_settings()
+    return render_template("student/course.html", course=course, modules=modules, progress=progress,
+                           enrollment=enrollment, paid=paid,
+                           payment_info=settings.get("online_payment_info", ""),
+                           school_phone=settings.get("phone", ""),
+                           whatsapp_url=settings.get("whatsapp_url", ""),
+                           student=g.student)
 
 
 @app.route("/student/module/<int:module_id>")
@@ -2981,7 +3149,11 @@ def student_certificates():
 @super_required
 def admin_courses():
     db = get_db()
-    courses = db.execute("SELECT * FROM courses ORDER BY created_at DESC").fetchall()
+    courses = db.execute("""
+        SELECT c.*,
+            (SELECT COUNT(*) FROM student_enrollments e WHERE e.course_id = c.id AND e.status = 'paid') AS paid_count,
+            (SELECT COUNT(*) FROM student_enrollments e WHERE e.course_id = c.id AND e.status != 'paid') AS pending_count
+        FROM courses c ORDER BY c.created_at DESC""").fetchall()
     return render_template("admin/courses.html", courses=courses)
 
 
@@ -2994,10 +3166,10 @@ def admin_course_add():
             image_url = save_upload(request.files["image"], "courses") or ""
         db = get_db()
         db.execute(
-            "INSERT INTO courses (title, description, category, image, duration, meet_link, instructor, lang) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO courses (title, description, category, image, duration, meet_link, instructor, lang, price) VALUES (?,?,?,?,?,?,?,?,?)",
             (request.form["title"].strip(), request.form["description"].strip(), request.form.get("category", "culinary"),
              image_url, request.form.get("duration", "").strip(), request.form.get("meet_link", "").strip(),
-             request.form.get("instructor", "").strip(), request.form.get("lang", "fr")))
+             request.form.get("instructor", "").strip(), request.form.get("lang", "fr"), form_money("price")))
         db.commit()
         flash("Cours ajouté.", "success")
         return redirect(url_for("admin_courses"))
@@ -3017,20 +3189,110 @@ def admin_course_edit(id):
         if "image" in request.files and request.files["image"].filename:
             image_url = save_upload(request.files["image"], "courses") or image_url
         db.execute(
-            "UPDATE courses SET title=?, description=?, category=?, image=?, duration=?, meet_link=?, instructor=?, lang=? WHERE id=?",
+            "UPDATE courses SET title=?, description=?, category=?, image=?, duration=?, meet_link=?, instructor=?, lang=?, price=? WHERE id=?",
             (request.form["title"].strip(), request.form["description"].strip(), request.form.get("category", "culinary"),
              image_url, request.form.get("duration", "").strip(), request.form.get("meet_link", "").strip(),
-             request.form.get("instructor", "").strip(), request.form.get("lang", "fr"), id))
+             request.form.get("instructor", "").strip(), request.form.get("lang", "fr"), form_money("price"), id))
         db.commit()
         flash("Cours mis à jour.", "success")
         return redirect(url_for("admin_courses"))
     return render_template("admin/course_form.html", course=course)
 
 
+PAYMENT_METHODS = ["Espèces", "Virement", "Carte", "Chèque", "Autre"]
+
+
+@app.route("/admin/courses/<int:id>/inscriptions", methods=["GET", "POST"])
+@super_required
+def admin_course_enrollments(id):
+    """Who registered for an online course, and who has paid.
+
+    Access to the live link and the modules follows the status set here:
+    'pending' until the school records the payment, 'paid' after.
+    """
+    db = get_db()
+    course = db.execute("SELECT * FROM courses WHERE id=?", (id,)).fetchone()
+    if not course:
+        flash("Cours introuvable.", "error")
+        return redirect(url_for("admin_courses"))
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        method = request.form.get("method", "")
+        method = method if method in PAYMENT_METHODS else "Autre"
+        note = request.form.get("note", "").strip()[:300]
+        if action == "add":
+            student_id = form_int("student_id", 0)
+            student = db.execute("SELECT id FROM students WHERE id=?", (student_id,)).fetchone()
+            if not student:
+                flash("Choisissez un étudiant.", "error")
+            else:
+                exists = db.execute("SELECT id FROM student_enrollments WHERE student_id=? AND course_id=?",
+                                    (student_id, id)).fetchone()
+                if exists:
+                    flash("Cet étudiant est déjà inscrit à ce cours.", "error")
+                else:
+                    db.execute(
+                        "INSERT INTO student_enrollments (student_id, course_id, status, paid_amount, paid_method, paid_at, payment_note) "
+                        "VALUES (?,?,'paid',?,?,CURRENT_TIMESTAMP,?)",
+                        (student_id, id, form_money("amount", float(course["price"] or 0)), method, note))
+                    db.commit()
+                    flash("Étudiant inscrit et paiement enregistré : l'accès est ouvert.", "success")
+            return redirect(url_for("admin_course_enrollments", id=id))
+
+        enrollment_id = form_int("enrollment_id", 0)
+        enrollment = db.execute("SELECT * FROM student_enrollments WHERE id=? AND course_id=?",
+                                (enrollment_id, id)).fetchone()
+        if not enrollment:
+            flash("Inscription introuvable.", "error")
+        elif action == "confirm":
+            amount = form_money("amount", float(course["price"] or 0))
+            db.execute(
+                "UPDATE student_enrollments SET status='paid', paid_amount=?, paid_method=?, "
+                "paid_at=CURRENT_TIMESTAMP, payment_note=? WHERE id=?",
+                (amount, method, note, enrollment_id))
+            db.commit()
+            flash("Paiement confirmé : l'étudiant a maintenant accès au cours et au lien du live.", "success")
+        elif action == "revoke":
+            db.execute(
+                "UPDATE student_enrollments SET status='pending', paid_amount=0, paid_method='', "
+                "paid_at=NULL WHERE id=?", (enrollment_id,))
+            db.commit()
+            flash("Accès retiré : l'inscription repasse en attente de paiement.", "success")
+        elif action == "delete":
+            db.execute("DELETE FROM student_enrollments WHERE id=?", (enrollment_id,))
+            db.commit()
+            flash("Inscription supprimée.", "success")
+        else:
+            flash("Action inconnue.", "error")
+        return redirect(url_for("admin_course_enrollments", id=id))
+
+    enrollments = db.execute("""
+        SELECT e.*, s.first_name, s.last_name, s.email, s.phone
+        FROM student_enrollments e JOIN students s ON s.id = e.student_id
+        WHERE e.course_id = ?
+        ORDER BY CASE WHEN e.status = 'paid' THEN 1 ELSE 0 END, e.enrolled_at DESC""", (id,)).fetchall()
+    enrolled = {e["student_id"] for e in enrollments}
+    others = [r for r in db.execute(
+        "SELECT id, first_name, last_name, email FROM students ORDER BY last_name, first_name").fetchall()
+        if r["id"] not in enrolled]
+    total_paid = sum(float(e["paid_amount"] or 0) for e in enrollments if e["status"] == "paid")
+    return render_template("admin/course_enrollments.html", course=course, enrollments=enrollments,
+                           others=others, total_paid=total_paid, methods=PAYMENT_METHODS)
+
+
 @app.route("/admin/courses/<int:id>/delete", methods=["POST"])
 @super_required
 def admin_course_delete(id):
     db = get_db()
+    # Foreign keys are enforced: progress and quiz attempts point at the
+    # modules without ON DELETE CASCADE, so removing a course that anyone had
+    # started used to fail with an IntegrityError (a 500 page). Clear the
+    # dependants first, then the course; modules and quizzes cascade.
+    modules = "SELECT id FROM course_modules WHERE course_id = ?"
+    db.execute("DELETE FROM student_progress WHERE module_id IN (%s)" % modules, (id,))
+    db.execute("DELETE FROM quiz_attempts WHERE module_id IN (%s)" % modules, (id,))
+    db.execute("DELETE FROM student_enrollments WHERE course_id=?", (id,))
     db.execute("DELETE FROM courses WHERE id=?", (id,))
     db.commit()
     flash("Cours supprimé.", "success")
@@ -3092,6 +3354,9 @@ def admin_module_delete(id):
     db = get_db()
     module = db.execute("SELECT course_id FROM course_modules WHERE id=?", (id,)).fetchone()
     course_id = module["course_id"] if module else 0
+    # Same constraint as course deletion: dependants first.
+    db.execute("DELETE FROM student_progress WHERE module_id=?", (id,))
+    db.execute("DELETE FROM quiz_attempts WHERE module_id=?", (id,))
     db.execute("DELETE FROM course_modules WHERE id=?", (id,))
     db.commit()
     flash("Module supprimé.", "success")
@@ -4364,6 +4629,15 @@ def seed_school_links():
                 "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
                 (key, url),
             )
+    # What a student sees while their online-course payment is pending.
+    # Editable under Réglages; only created when missing.
+    db.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+        ("online_payment_info",
+         "Réglez les frais du cours à l'école (espèces ou carte) ou par virement bancaire, "
+         "puis envoyez-nous votre reçu par WhatsApp. Dès confirmation, le lien du live "
+         "et les modules s'ouvrent dans votre espace."),
+    )
     db.commit()
 
 

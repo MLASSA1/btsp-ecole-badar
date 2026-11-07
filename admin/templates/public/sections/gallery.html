@@ -1,0 +1,40 @@
+  <!-- Gallery -->
+  {% if settings.get('show_gallery', '1') == '1' %}
+  <section class="section galerie" id="galerie">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.gallery_tag }}</span>
+        <h2>{{ t.gallery_title }} <em>{{ t.gallery_title_em }}</em></h2>
+        <p>{{ t.gallery_text }}</p>
+      </div>
+      <div class="gallery-grid">
+        {% if gallery %}
+          {% for img in gallery %}
+          <div class="gallery-item {% if img.large %}gallery-large{% endif %}">
+            <img src="{{ img.image }}" alt="{{ img.title }}" loading="lazy">
+            {% if img.title %}<span class="gallery-caption">{{ img.title }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="gallery-item gallery-large">
+            <img src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=900&h=560&fit=crop" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <span class="gallery-caption">{{ t.pillar_1_title }}</span>
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=460&h=560&fit=crop" alt="{{ t.tab_culinary }}" loading="lazy">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=460&h=560&fit=crop" alt="{{ t.tab_it }}" loading="lazy">
+          </div>
+          <div class="gallery-item">
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=460&h=560&fit=crop" alt="{{ t.tab_hospitality }}" loading="lazy">
+          </div>
+          <div class="gallery-item gallery-large">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&h=560&fit=crop" alt="{{ t.pillars_tag }}" loading="lazy">
+            <span class="gallery-caption">{{ t.pillar_2_title }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

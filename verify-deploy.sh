@@ -27,11 +27,23 @@ echo "Verifying $SITE"
 echo ""
 
 check "homepage"            "$(code "$SITE/")"                      200
-check "programme page"      "$(code "$SITE/formation/1")"           200
+# First programme actually published, rather than a fixed id that an admin
+# may hide.
+first_prog=$(curl -s "$SITE/formations" | grep -oE 'href="/formation/[0-9]+"' | head -1 | grep -oE '[0-9]+')
+check "programme page"      "$(code "$SITE/formation/${first_prog:-0}")" 200
 check "arabic homepage"     "$(code "$SITE/ar/")"                   200
 check "admin login page"    "$(code "$SITE/admin/login")"           200
 check "student login page"  "$(code "$SITE/student/login")"         200
 check "diploma specimen"    "$(code "$SITE/uploads/diplome-specimen-btsp.jpg")" 200
+
+echo ""
+# Every public page, in each language.
+for lp in "" /en /ar; do
+    for page in services catalogue references formations en-ligne certificats a-propos contact devis; do
+        check "page $lp/$page" "$(code "$SITE$lp/$page")" 200
+    done
+done
+check "old /#anchor links still land on home" "$(code "$SITE/")" 200
 
 echo ""
 headers=$(curl -s -D - -o /dev/null "$SITE/")
@@ -59,8 +71,9 @@ echo ""
 # Every published programme should carry its own photo. Counting cards against
 # distinct images catches a duplicate or a missing one without hard-coding a
 # catalogue size, which goes stale the moment a programme is hidden.
-cards=$(curl -s "$SITE/" | grep -c 'class="formation-card')
-images=$(curl -s "$SITE/" | grep -oE 'images\.unsplash\.com/photo-[a-z0-9-]+' | sort -u | wc -l | tr -d ' ')
+# The programme grid lives on /formations since the site became multi-page.
+cards=$(curl -s "$SITE/formations" | grep -c 'class="formation-card')
+images=$(curl -s "$SITE/formations" | grep -oE '(images\.unsplash\.com/photo-[a-z0-9-]+|/uploads/[a-z0-9._-]+\.jpe?g)' | sort -u | wc -l | tr -d ' ')
 if [ "$cards" -gt 0 ] && [ "$images" -ge "$cards" ]; then
     printf '  ok    %-42s %s cards, %s distinct photos\n' "programme photos" "$cards" "$images"
 else

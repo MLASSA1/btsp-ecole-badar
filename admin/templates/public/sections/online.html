@@ -1,0 +1,75 @@
+  <!-- Online courses / e-learning -->
+  {% if settings.get('show_online', '1') == '1' %}
+  <section class="section online" id="en-ligne">
+    <div class="container">
+      <div class="online-grid">
+        <div class="online-intro">
+          <span class="section-tag">{{ t.online_tag }}</span>
+          <h2>{{ t.online_title }} <em>{{ t.online_title_em }}</em></h2>
+          <p>{{ t.online_text }}</p>
+          <p class="online-access-note">{{ t.online_paid_note }}</p>
+          <div class="online-actions">
+            <a href="/student/login" class="btn btn-accent">{{ t.btn_online_access }}</a>
+            <a href="/student/signup" class="btn btn-outline">{{ t.btn_online_signup }}</a>
+          </div>
+        </div>
+        <ul class="online-perks">
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            <div><strong>{{ t.online_1_title }}</strong><p>{{ t.online_1_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </span>
+            <div><strong>{{ t.online_2_title }}</strong><p>{{ t.online_2_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
+            </span>
+            <div><strong>{{ t.online_3_title }}</strong><p>{{ t.online_3_desc }}</p></div>
+          </li>
+          <li>
+            <span class="perk-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </span>
+            <div><strong>{{ t.online_4_title }}</strong><p>{{ t.online_4_desc }}</p></div>
+          </li>
+        </ul>
+      </div>
+
+      {% if online_courses %}
+      <h3 class="online-courses-heading">{{ t.online_courses_heading }}</h3>
+      <div class="online-courses">
+        {% for c in online_courses %}
+        <article class="online-card">
+          <div class="online-card-media">
+            {% if c.image %}
+              <img src="{{ c.image }}" alt="{{ c.title }}" loading="lazy">
+            {% else %}
+              <span class="online-card-fallback">{{ c.title[0]|upper }}</span>
+            {% endif %}
+            <span class="online-badge">{{ t.online_tag }}</span>
+          </div>
+          <div class="online-card-body">
+            {% if c.duration %}<span class="online-card-meta">{{ c.duration }}</span>{% endif %}
+            <h4>{{ c.title }}</h4>
+            <p>{{ c.description }}</p>
+            {% if c.instructor %}
+            <span class="online-card-meta">{{ t.online_instructor }} : {{ c.instructor }}</span>
+            {% endif %}
+            <div class="online-card-foot">
+              <span class="online-price">{% if c.price %}{{ '%.0f'|format(c.price) }} DH{% else %}{{ t.online_price_on_request }}{% endif %}</span>
+              <a href="/student/signup" class="link-arrow">{{ t.online_enroll }}</a>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}

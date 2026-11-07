@@ -1,0 +1,68 @@
+{# Every public page. app.PUBLIC_PAGES says which section blocks a page shows
+   and in what order; each block lives in public/sections/<name>.html and
+   reads only what public_context() provides. #}
+{% set home_url = lp + '/' %}
+{% set nav_prefix = home_url %}
+{% set formation_url_base = lp + '/formation/' %}
+{% set page_label = t.get(page_conf.label, '') %}
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang == 'ar' else 'ltr' }}">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  {% if page == 'home' %}
+  <title>{{ settings.get('site_name', 'BTSP') }} — {{ settings.get('site_name_full', 'École BADAR Training and Service') }}</title>
+  {% else %}
+  <title>{{ page_label }} — {{ settings.get('site_name', 'BTSP') }}</title>
+  {% endif %}
+  <meta name="description" content="{{ settings.get('site_tagline', '') }}">
+  <meta name="theme-color" content="#0A0A0A">
+  <meta property="og:title" content="{{ page_label if page != 'home' else settings.get('site_name_full', 'BTSP') }}">
+  <meta property="og:description" content="{{ settings.get('site_tagline', '') }}">
+  <meta property="og:type" content="website">
+  {% set page_path = '/' if page == 'home' else '/' + page %}
+  {% for l in supported_langs %}
+  <link rel="alternate" hreflang="{{ l }}" href="{{ ('' if l == 'fr' else '/' + l) ~ (page_path if page != 'home' else '/') }}">
+  {% endfor %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  {% if lang == 'ar' %}
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  {% endif %}
+  <link rel="stylesheet" href="{{ asset('style.css') }}">
+</head>
+<body class="page-{{ page }}">
+
+  <a href="#main" class="skip-link">{{ t.nav_home }}</a>
+
+  {% include 'public/_header.html' %}
+
+  <main id="main">
+  {% if page != 'home' %}
+  <header class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="breadcrumb">
+        <a href="{{ home_url }}">{{ t.nav_home }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ page_label }}</span>
+      </nav>
+      <h1>{{ page_label }}</h1>
+    </div>
+  </header>
+  {% endif %}
+
+  {% for s in sections %}
+  {% include 'public/sections/' ~ s ~ '.html' %}
+  {% endfor %}
+  </main>
+
+  {% include 'public/_footer.html' %}
+
+  <script>
+{% include 'public/_page_script.js' %}
+  </script>
+</body>
+</html>

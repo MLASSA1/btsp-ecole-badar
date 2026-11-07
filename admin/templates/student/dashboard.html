@@ -202,7 +202,11 @@
       </div>
 
       <div class="course-card-actions">
-        <a href="{{ url_for('student_course', course_id=e.id) }}" class="btn btn-primary btn-sm">Continuer</a>
+        {% if e.status == 'paid' %}
+        <a href="{{ url_for('student_course', course_id=e.course_id) }}" class="btn btn-primary btn-sm">Continuer</a>
+        {% else %}
+        <a href="{{ url_for('student_course', course_id=e.course_id) }}" class="btn btn-sm" style="background:#FFF8EB;border-color:#F5C26B;color:#8A5A00">En attente de paiement</a>
+        {% endif %}
         {% if e.meet_link %}
           <a href="{{ e.meet_link }}" target="_blank" class="btn btn-success btn-sm" style="background:#16A34A;border-color:#16A34A;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14"/><rect x="1" y="6" width="14" height="12" rx="2"/></svg>

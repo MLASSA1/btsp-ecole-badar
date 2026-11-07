@@ -11,3 +11,4 @@ database.db-wal
 .claude/
 deploy-vps.sh
 update-vps.sh
+tests/

@@ -1,0 +1,50 @@
+  <!-- Hero -->
+  {% if settings.get('show_hero', '1') == '1' %}
+  <section class="hero" id="accueil">
+    <div class="hero-grid">
+      <div class="hero-panel">
+        <div class="hero-panel-inner">
+          {# Per-language tagline if the admin set one, else the French tagline on /
+             and the translated wording on the other locales. #}
+          <span class="hero-badge">{{ settings.get('site_tagline_' + lang) or (settings.get('site_tagline', t.hero_badge) if lang == 'fr' else t.hero_badge) }}</span>
+          <h1>{{ hero_title }}<br><em>{{ hero_subtitle }}</em></h1>
+          <p class="hero-lead">{{ t.hero_text }}</p>
+          <ul class="hero-points">
+            <li>{{ t.hero_point_1 }}</li>
+            <li>{{ t.hero_point_2 }}</li>
+            <li>{{ t.hero_point_3 }}</li>
+            <li>{{ t.hero_point_4 }}</li>
+          </ul>
+          <div class="hero-buttons">
+            <a href="{{ lp }}/devis" class="btn btn-accent">{{ t.hero_cta_pro }}</a>
+            <a href="{{ lp }}/catalogue" class="btn btn-ghost">{{ t.corp_cta }}</a>
+          </div>
+          {# An individual landing on a page written for employers still needs
+             one obvious way through to the school side. #}
+          <p class="hero-aside"><a href="{{ lp }}/formations">{{ t.hero_cta_school }}</a></p>
+        </div>
+      </div>
+      <div class="hero-media" {% if settings.get('hero_bg_image') %}style="background-image:url('{{ settings.get('hero_bg_image') }}')"{% endif %}></div>
+    </div>
+    <div class="hero-stats">
+      <div class="container hero-stats-inner">
+        <div class="stat">
+          <span class="stat-number">{{ settings.get('stat_diplomes', '500+') }}</span>
+          <span class="stat-label">{{ t.stat_graduates_label }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">{{ settings.get('stat_formations', '15+') }}</span>
+          <span class="stat-label">{{ t.stat_programs_label }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">{{ settings.get('stat_reussite', '98%') }}</span>
+          <span class="stat-label">{{ t.stat_success_label }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">{{ settings.get('years_experience', '12') }}</span>
+          <span class="stat-label">{{ t.years_exp_label }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}

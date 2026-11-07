@@ -1,0 +1,42 @@
+  {# Training packs, one per department. pack_items holds only the packs the
+     admin left visible, and they are numbered by position, so hiding Pack 3
+     makes the next one "Pack 3" rather than leaving a gap in the sequence.
+     The home page shows the first three and links to the full catalogue. #}
+  {% if pack_items %}
+  {% set shown_packs = pack_items[:3] if page == 'home' else pack_items %}
+  <section class="section corp" id="catalogue">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.pack_tag }}</span>
+        <h2>{{ pack_count }} {{ t.pack_title }} <em>{{ t.pack_title_em }}</em></h2>
+        <p>{{ t.pack_text }}</p>
+      </div>
+      <div class="corp-grid" data-count="{{ shown_packs|length }}">
+        {% for i in shown_packs %}
+        <article class="corp-card pack-card">
+          <div class="pack-head">
+            <span class="corp-num">{{ t.pack_label }} {{ loop.index }}</span>
+            <span class="pack-dept">{{ t['pack_' ~ i ~ '_dept'] }}</span>
+          </div>
+          <h3>{{ t['pack_' ~ i ~ '_title'] }}</h3>
+          <ul class="corp-items">
+            {% for j in range(1, 13) %}
+            {% set point = t.get('pack_' ~ i ~ '_item_' ~ j) %}
+            {% if point %}<li>{{ point }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+          <a href="{{ lp }}/devis" class="pack-link">{{ t.pack_cta }}</a>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="corp-cta">
+        {% if page == 'home' and pack_items|length > shown_packs|length %}
+        <a href="{{ lp }}/catalogue" class="btn btn-primary btn-lg">{{ t.pack_view_all }} ({{ pack_count }})</a>
+        {% else %}
+        <a href="{{ lp }}/devis" class="btn btn-accent btn-lg">{{ t.pack_cta }}</a>
+        <p class="pack-note">{{ t.pack_note }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

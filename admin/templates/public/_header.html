@@ -1,7 +1,6 @@
 {# Shared top bar + navigation.
-   Expects: settings, t, lang, supported_langs, home_url, nav_prefix
-   nav_prefix is '' on the landing page (plain #anchors) and the home URL
-   elsewhere, so the same links work from a sub-page. #}
+   Expects: settings, t, lang, supported_langs, home_url; optional lp (language
+   URL prefix), page (current page slug) and formation (on a programme page). #}
 <div class="topbar">
   <div class="topbar-inner">
     <div class="topbar-contact">
@@ -18,7 +17,12 @@
     <div class="topbar-actions">
       <div class="lang-switcher">
         {% for l in supported_langs %}
-          <a href="{{ '/' if l == 'fr' else '/' + l + '/' }}" class="{% if l == lang %}active{% endif %}" hreflang="{{ l }}">{{ l|upper }}</a>
+          {# Switching language keeps you on the same page. #}
+          {% set lpre = '' if l == 'fr' else '/' + l %}
+          {% if formation is defined %}{% set target = lpre ~ '/formation/' ~ formation.id %}
+          {% elif page is defined and page != 'home' %}{% set target = lpre ~ '/' ~ page %}
+          {% else %}{% set target = lpre ~ '/' %}{% endif %}
+          <a href="{{ target }}" class="{% if l == lang %}active{% endif %}" hreflang="{{ l }}">{{ l|upper }}</a>
         {% endfor %}
       </div>
       <a href="/student/login" class="topbar-portal">
@@ -46,15 +50,15 @@
       <span></span><span></span><span></span>
     </button>
     <ul class="nav-links" id="navLinks">
-      {# Ordered the way the page now reads: what a business buys first, the
-         school second. #}
-      <li><a href="{{ nav_prefix }}#services">{{ t.nav_pro }}</a></li>
-      <li><a href="{{ nav_prefix }}#catalogue">{{ t.nav_catalogue }}</a></li>
-      <li><a href="{{ nav_prefix }}#references">{{ t.nav_references }}</a></li>
-      <li><a href="{{ nav_prefix }}#formations">{{ t.nav_formations }}</a></li>
-      <li><a href="{{ nav_prefix }}#en-ligne">{{ t.nav_online }}</a></li>
-      <li><a href="{{ nav_prefix }}#certificats">{{ t.nav_certificates }}</a></li>
-      <li class="nav-links-cta"><a href="{{ nav_prefix }}#pro-contact" class="btn btn-accent btn-sm">{{ t.nav_quote }}</a></li>
+      {# One entry per page; what a business buys first, the school second.
+         `page` is set by render_page / render_formation for the active state. #}
+      {% set lp = lp if lp is defined else ('' if lang == 'fr' else '/' + lang) %}
+      {% for slug, key in [('services', 'nav_pro'), ('catalogue', 'nav_catalogue'), ('references', 'nav_references'),
+                           ('formations', 'nav_formations'), ('en-ligne', 'nav_online'), ('a-propos', 'nav_about'),
+                           ('contact', 'nav_contact')] %}
+      <li><a href="{{ lp }}/{{ slug }}"{% if page is defined and page == slug %} class="is-active" aria-current="page"{% endif %}>{{ t[key] }}</a></li>
+      {% endfor %}
+      <li class="nav-links-cta"><a href="{{ lp }}/devis" class="btn btn-accent btn-sm">{{ t.nav_quote }}</a></li>
       <li class="nav-links-portal"><a href="/student/login">{{ t.nav_student_space }}</a></li>
     </ul>
   </div>

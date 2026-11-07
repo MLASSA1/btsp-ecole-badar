@@ -1,0 +1,62 @@
+  <!-- Formations -->
+  {% if settings.get('show_formations', '1') == '1' %}
+  <section class="section formations" id="formations">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.formations_tag }}</span>
+        <h2>{{ t.formations_title }} <em>{{ t.formations_title_em }}</em></h2>
+        <p>{{ t.formations_text }}</p>
+      </div>
+      <div class="formation-tabs" role="tablist">
+        {# Only poles that still have a published programme get a tab; an empty
+           one used to sit there and lead to a blank grid. #}
+        <button class="tab active" data-cat="all" role="tab" aria-selected="true">{{ t.tab_all }}</button>
+        {% for c in category_tabs %}
+        <button class="tab" data-cat="{{ c.key }}" role="tab" aria-selected="false">{{ c.label }}</button>
+        {% endfor %}
+      </div>
+      <div class="formations-grid">
+        {% for f in formations %}
+        <article class="formation-card {% if f.featured %}featured{% endif %}" data-category="{{ f.category }}"{% if f.id in state_ids %} data-state="1"{% endif %}>
+          {# Covers the whole card so the entire tile is clickable; the visible
+             "learn more" affordance below is the same destination. #}
+          <a class="card-link" href="{{ formation_url_base }}{{ f.id }}" aria-label="{{ f.title }}"></a>
+          <div class="card-image">
+            {% if f.image %}
+              <img src="{{ f.image }}" alt="{{ f.title }}" loading="lazy">
+            {% elif f.category == 'it' %}
+              <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
+            {% elif f.category == 'hospitality' %}
+              <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=560&h=340&fit=crop" alt="{{ f.title }}" loading="lazy">
+            {% endif %}
+            {% if f.badge %}
+              <span class="card-badge {% if f.featured %}badge-accent{% endif %}">{{ f.badge }}</span>
+            {% endif %}
+          </div>
+          <div class="card-content">
+            <div class="card-meta">
+              <span>{{ f.duration }}</span>
+              <span class="meta-dot"></span>
+              <span>{{ f.diploma_type }}</span>
+            </div>
+            <h3>{{ f.title }}</h3>
+            <p>{{ f.description }}</p>
+            {% if f.features %}
+            <ul class="card-features">
+              {% for feat in f.features.split('|') %}
+                {% if feat.strip() %}
+                <li>{{ feat.strip() }}</li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <span class="btn btn-card">{{ t.btn_learn_more }}</span>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

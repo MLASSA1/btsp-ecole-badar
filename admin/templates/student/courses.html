@@ -119,11 +119,13 @@
       {% endif %}
     </div>
     <div class="catalog-card-footer">
-      {% if c.id in enrolled_ids %}
+      {% if c.id in paid_ids %}
         <a href="{{ url_for('student_course', course_id=c.id) }}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">Voir le cours</a>
+      {% elif c.id in enrolled_ids %}
+        <a href="{{ url_for('student_course', course_id=c.id) }}" class="btn btn-sm" style="flex:1;justify-content:center;background:#FFF8EB;border-color:#F5C26B;color:#8A5A00">En attente de paiement</a>
       {% else %}
         <form method="POST" action="{{ url_for('student_enroll', course_id=c.id) }}" style="flex:1;">
-          <button type="submit" class="btn btn-accent btn-sm btn-block">S'inscrire</button>
+          <button type="submit" class="btn btn-accent btn-sm btn-block">S'inscrire{% if c.price %} · {{ '%.0f'|format(c.price) }} DH{% endif %}</button>
         </form>
       {% endif %}
     </div>

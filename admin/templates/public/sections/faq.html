@@ -1,0 +1,24 @@
+  <!-- FAQ -->
+  {% if faqs %}
+  <section class="section faq-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.faq_tag }}</span>
+        <h2>{{ t.faq_title }} <em>{{ t.faq_title_em }}</em></h2>
+      </div>
+      <div class="faq-list">
+        {% for fq in faqs %}
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false">
+            <span>{{ fq.question }}</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer">
+            <p>{{ fq.answer }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

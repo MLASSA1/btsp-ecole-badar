@@ -1,0 +1,166 @@
+  <!-- Professional enquiry: corporate training + detailed proposal -->
+  <section class="section pro-contact" id="pro-contact">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.pro_tag }}</span>
+        <h2>{{ t.corporate_form_title }}</h2>
+        <p>{{ t.proposal_text }}</p>
+      </div>
+      <div class="pro-form-tabs" role="tablist">
+        <button class="pro-tab active" data-form="corporateForm" role="tab" aria-selected="true">{{ t.btn_corporate_contact }}</button>
+        <button class="pro-tab" data-form="proposalForm" role="tab" aria-selected="false">{{ t.proposal_submit }}</button>
+      </div>
+
+      <div class="corporate-form-wrapper" id="pane-corporateForm">
+        <form id="corporateForm">
+          <input type="hidden" name="inscription_type" value="corporate">
+            <div class="hp" aria-hidden="true">
+              <label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="corp_company">{{ t.form_company }}</label>
+              <input type="text" id="corp_company" name="company_name" required>
+            </div>
+            <div class="form-group">
+              <label for="corp_contact">{{ t.form_contact_person }}</label>
+              <input type="text" id="corp_contact" name="prenom" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="corp_email">{{ t.form_email }}</label>
+              <input type="email" id="corp_email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="corp_phone">{{ t.form_phone }}</label>
+              <input type="tel" id="corp_phone" name="telephone" required placeholder="+212 6XX-XXXXXX">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="corp_participants">{{ t.form_participants }}</label>
+              <input type="number" id="corp_participants" name="num_participants" min="1" value="5">
+            </div>
+            <div class="form-group">
+              <label for="corp_budget">{{ t.form_budget }}</label>
+              <select id="corp_budget" name="budget">
+                <option value="" disabled selected>{{ t.form_budget_placeholder }}</option>
+                <option value="under_10k">{{ t.budget_under_10k }}</option>
+                <option value="10k_30k">{{ t.budget_10k_30k }}</option>
+                <option value="30k_50k">{{ t.budget_30k_50k }}</option>
+                <option value="over_50k">{{ t.budget_over_50k }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="corp_formation">{{ t.form_formation }}</label>
+            <select id="corp_formation" name="formation" required>
+              <option value="" disabled selected>{{ t.form_formation_placeholder }}</option>
+              {# Only what is currently offered: hidden packs and services are left out. #}
+              {% if pack_items %}
+              <optgroup label="{{ t.pack_tag }}">
+                {% for i in pack_items %}<option value="{{ t.pack_label }} — {{ t['pack_' ~ i ~ '_title'] }}">{{ t['pack_' ~ i ~ '_title'] }}</option>{% endfor %}
+              </optgroup>
+              {% endif %}
+              {% if pro_items %}
+              <optgroup label="{{ t.nav_pro }}">
+                {% for i in pro_items %}<option value="{{ t['pro_' ~ i ~ '_title'] }}">{{ t['pro_' ~ i ~ '_title'] }}</option>{% endfor %}
+              </optgroup>
+              {% endif %}
+              <optgroup label="{{ t.nav_formations }}">
+                {% for f in formations %}<option value="{{ f.title }}">{{ f.title }}</option>{% endfor %}
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="corp_dates">{{ t.form_desired_dates }}</label>
+              <input type="text" id="corp_dates" name="desired_dates">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="corp_message">{{ t.form_message }}</label>
+            <textarea id="corp_message" name="message" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent btn-full">{{ t.form_corporate_submit }}</button>
+        </form>
+      </div>
+
+      <div class="corporate-form-wrapper" id="pane-proposalForm" hidden>
+        <form id="proposalForm">
+            <div class="hp" aria-hidden="true">
+              <label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_company">{{ t.proposal_company }}</label>
+              <input type="text" id="prop_company" name="company_name" required>
+            </div>
+            <div class="form-group">
+              <label for="prop_contact">{{ t.proposal_contact }}</label>
+              <input type="text" id="prop_contact" name="contact_name" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_email">{{ t.form_email }}</label>
+              <input type="email" id="prop_email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="prop_phone">{{ t.form_phone }}</label>
+              <input type="tel" id="prop_phone" name="phone" required placeholder="+212 6XX-XXXXXX">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_training">{{ t.proposal_training }}</label>
+              <select id="prop_training" name="training_type" required>
+                <option value="" disabled selected>{{ t.form_formation_placeholder }}</option>
+                {# Only what is currently offered: hidden packs and services are left out. #}
+                {% if pack_items %}
+                <optgroup label="{{ t.pack_tag }}">
+                  {% for i in pack_items %}<option value="{{ t.pack_label }} — {{ t['pack_' ~ i ~ '_title'] }}">{{ t['pack_' ~ i ~ '_title'] }}</option>{% endfor %}
+                </optgroup>
+                {% endif %}
+                {% if pro_items %}
+                <optgroup label="{{ t.nav_pro }}">
+                  {% for i in pro_items %}<option value="{{ t['pro_' ~ i ~ '_title'] }}">{{ t['pro_' ~ i ~ '_title'] }}</option>{% endfor %}
+                </optgroup>
+                {% endif %}
+                <optgroup label="{{ t.nav_formations }}">
+                  {% for f in formations %}<option value="{{ f.title }}">{{ f.title }}</option>{% endfor %}
+                </optgroup>
+                <option value="custom">{{ t.proposal_custom_option }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prop_participants">{{ t.proposal_participants }}</label>
+              <input type="number" id="prop_participants" name="num_participants" min="1" value="10">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="prop_objectives">{{ t.proposal_objectives }}</label>
+            <textarea id="prop_objectives" name="objectives" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prop_budget">{{ t.form_budget }}</label>
+              <select id="prop_budget" name="budget">
+                <option value="" disabled selected>{{ t.form_budget_placeholder }}</option>
+                <option value="under_10k">{{ t.budget_under_10k }}</option>
+                <option value="10k_30k">{{ t.budget_10k_30k }}</option>
+                <option value="30k_50k">{{ t.budget_30k_50k }}</option>
+                <option value="over_50k">{{ t.budget_over_50k }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prop_timeline">{{ t.proposal_timeline }}</label>
+              <input type="text" id="prop_timeline" name="timeline">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent btn-full">{{ t.proposal_submit }}</button>
+        </form>
+      </div>
+    </div>
+  </section>

@@ -1,5 +1,5 @@
 {# Shared footer + WhatsApp button + the JS every public page needs.
-   Expects: settings, t, lang, home_url, nav_prefix, formations #}
+   Expects: settings, t, lang, home_url, formations; optional lp, pro_items #}
 <footer class="footer">
   <div class="container">
     <div class="footer-grid">
@@ -32,28 +32,30 @@
       <div class="footer-links">
         <h4>{{ t.footer_quick_links }}</h4>
         <ul>
-          <li><a href="{{ nav_prefix }}#accueil">{{ t.nav_home }}</a></li>
-          <li><a href="{{ nav_prefix }}#poles">{{ t.pillars_tag }}</a></li>
-          <li><a href="{{ nav_prefix }}#formations">{{ t.nav_formations }}</a></li>
-          <li><a href="{{ nav_prefix }}#admission">{{ t.process_tag }}</a></li>
-          <li><a href="{{ nav_prefix }}#contact">{{ t.nav_register }}</a></li>
+          {% set lp = lp if lp is defined else ('' if lang == 'fr' else '/' + lang) %}
+          <li><a href="{{ lp }}/">{{ t.nav_home }}</a></li>
+          <li><a href="{{ lp }}/formations">{{ t.nav_formations }}</a></li>
+          <li><a href="{{ lp }}/en-ligne">{{ t.nav_online }}</a></li>
+          <li><a href="{{ lp }}/certificats">{{ t.nav_certificates }}</a></li>
+          <li><a href="{{ lp }}/a-propos">{{ t.nav_about }}</a></li>
+          <li><a href="{{ lp }}/contact">{{ t.nav_register }}</a></li>
         </ul>
       </div>
       <div class="footer-links">
         <h4>{{ t.nav_pro }}</h4>
         <ul>
-          <li><a href="{{ nav_prefix }}#services">{{ t.pro_1_title }}</a></li>
-          <li><a href="{{ nav_prefix }}#services">{{ t.pro_2_title }}</a></li>
-          <li><a href="{{ nav_prefix }}#services">{{ t.pro_3_title }}</a></li>
-          <li><a href="{{ nav_prefix }}#services">{{ t.pro_4_title }}</a></li>
-          <li><a href="{{ nav_prefix }}#pro-contact">{{ t.btn_corporate_contact }}</a></li>
+          {% for i in (pro_items if pro_items is defined else [1, 2, 3, 4]) %}
+          <li><a href="{{ lp }}/services">{{ t['pro_' ~ i ~ '_title'] }}</a></li>
+          {% endfor %}
+          <li><a href="{{ lp }}/catalogue">{{ t.nav_catalogue }}</a></li>
+          <li><a href="{{ lp }}/devis">{{ t.btn_corporate_contact }}</a></li>
         </ul>
       </div>
       <div class="footer-links">
         <h4>{{ t.footer_formations }}</h4>
         <ul>
           {% for f in formations[:5] %}
-          <li><a href="{{ '/formation/' if lang == 'fr' else '/' + lang + '/formation/' }}{{ f.id }}">{{ f.title }}</a></li>
+          <li><a href="{{ lp }}/formation/{{ f.id }}">{{ f.title }}</a></li>
           {% endfor %}
         </ul>
       </div>

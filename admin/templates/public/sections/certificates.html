@@ -1,0 +1,55 @@
+  <!-- Certificates -->
+  {% if settings.get('show_certificates', '1') == '1' %}
+  <section class="section certificates" id="certificats">
+    <div class="container">
+      <div class="cert-grid">
+        <div class="cert-content">
+          <span class="section-tag">{{ t.cert_tag }}</span>
+          <h2>{{ t.cert_title }} <em>{{ t.cert_title_em }}</em></h2>
+          <p>{{ t.cert_text }}</p>
+          <div class="cert-list">
+            {% for c in certificates %}
+            <div class="cert-item">
+              <div class="cert-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 15l-2 5 2-1 2 1-2-5z"/><circle cx="12" cy="9" r="6"/><path d="M9 9l2 2 4-4"/></svg>
+              </div>
+              <div>
+                <h4>{{ c.title }}</h4>
+                <p>{{ c.description }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="cert-visual">
+          {% if settings.get('cert_specimen_image') %}
+          {# A photograph of the diploma the school actually issues carries far more
+             weight than a CSS mock-up. Personal fields are blanked on the file. #}
+          <figure class="cert-specimen">
+            <img src="{{ settings.get('cert_specimen_image') }}"
+                 alt="{{ t.cert_specimen_alt }}" loading="lazy">
+            <figcaption>{{ t.cert_specimen_caption }}</figcaption>
+          </figure>
+          {% else %}
+          <div class="cert-mockup">
+            <div class="cert-mockup-inner">
+              <div class="cert-ornament-top"></div>
+              <span class="cert-school">{{ settings.get('site_name_full', 'École BADAR Training and Service') }}</span>
+              <h3>{{ t.cert_mockup_title }}</h3>
+              <div class="cert-divider"></div>
+              <p>{{ t.cert_mockup_awarded }}</p>
+              <span class="cert-name">{{ t.cert_mockup_name }}</span>
+              <p class="cert-program">{{ t.cert_mockup_for }} <strong>{{ formations[0].title if formations else t.pillar_1_title }}</strong></p>
+              <div class="cert-footer">
+                <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_director }}</span></div>
+                <div class="cert-sig"><div class="sig-line"></div><span>{{ t.cert_mockup_trainer }}</span></div>
+              </div>
+              <div class="cert-ornament-bottom"></div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}

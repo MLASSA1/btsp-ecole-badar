@@ -212,6 +212,18 @@
     </div>
   </div>
 
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">Cours en ligne : paiement</div>
+    <div class="card-body">
+      <div class="form-group">
+        <label>Instructions de paiement montrées à l'étudiant</label>
+        <textarea name="setting_online_payment_info" rows="4">{{ settings.get('online_payment_info', '') }}</textarea>
+        <p class="text-sm text-muted" style="margin-top:6px">Affichées tant que le paiement n'est pas confirmé. Le lien du live et les modules
+          s'ouvrent quand vous confirmez le paiement dans Cours en ligne → Inscriptions.</p>
+      </div>
+    </div>
+  </div>
+
   <button type="submit" class="btn btn-primary">Sauvegarder les Paramètres</button>
 </form>
 {% endblock %}

@@ -1,0 +1,86 @@
+{% extends "admin/base.html" %}
+{% block title %}Offre &amp; visibilité{% endblock %}
+{% block page_title %}Offre &amp; visibilité{% endblock %}
+
+{% block content %}
+<p class="text-muted" style="margin-bottom:22px;max-width:760px">
+  Choisissez ce que le site public propose. Un élément masqué disparaît de toutes les pages
+  (accueil, Services, Catalogue, pied de page, formulaire de devis) ; les éléments restants se
+  réorganisent et les packs sont renumérotés, sans laisser d'emplacement vide.
+</p>
+
+{% macro toggle(kind, item, visible) %}
+<form method="POST" action="{{ url_for('admin_offer') }}" style="display:inline">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <input type="hidden" name="item" value="{{ item }}">
+  <button type="submit" class="badge {{ 'badge-success' if visible else 'badge-danger' }}"
+          style="cursor:pointer;border:none;min-width:84px" title="Cliquer pour {{ 'masquer' if visible else 'afficher' }}">
+    {{ 'Visible' if visible else 'Masqué' }}
+  </button>
+</form>
+{% endmacro %}
+
+<div class="card" id="formation" style="margin-bottom:24px">
+  <div class="card-header">Diplômes reconnus par l'État</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead><tr><th>Image</th><th>Diplôme</th><th>Durée</th><th>Pôle</th><th>Sur le site</th><th></th></tr></thead>
+      <tbody>
+        {% for f in diplomas %}
+        <tr>
+          <td>{% if f.image %}<img src="{{ f.image }}" class="thumb" alt="">{% else %}<div class="thumb-placeholder">IMG</div>{% endif %}</td>
+          <td><strong>{{ f.title }}</strong><br><span class="text-muted text-sm">{{ f.diploma_type }}</span></td>
+          <td>{{ f.duration }}</td>
+          <td>{{ {'culinary': 'Culinaire', 'hospitality': 'Hôtellerie', 'health': 'Santé', 'business': 'Gestion', 'languages': 'Langues'}.get(f.category, f.category) }}</td>
+          <td>{{ toggle('formation', f.id, f.active) }}</td>
+          <td><a href="{{ url_for('admin_formation_edit', id=f.id) }}" class="btn btn-sm">Modifier</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted" style="padding:20px">
+          Aucun diplôme d'État. Dans <a href="{{ url_for('admin_formations') }}">Formations</a>, mettez
+          « Diplôme d'État » comme type de diplôme pour qu'un programme apparaisse ici.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="pro" style="margin-bottom:24px">
+  <div class="card-header">Services B2B</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead><tr><th>#</th><th>Service</th><th>Description</th><th>Sur le site</th></tr></thead>
+      <tbody>
+        {% for s in services %}
+        <tr>
+          <td>{{ s.n }}</td>
+          <td><strong>{{ s.title }}</strong></td>
+          <td class="text-sm text-muted">{{ s.desc }}</td>
+          <td>{{ toggle('pro', s.n, s.visible) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="pack">
+  <div class="card-header">Packs de formation entreprise</div>
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead><tr><th>#</th><th>Pack</th><th>Département</th><th>Sur le site</th></tr></thead>
+      <tbody>
+        {% for p in packs %}
+        <tr>
+          <td>{{ p.n }}</td>
+          <td><strong>{{ p.title }}</strong></td>
+          <td>{{ p.dept }}</td>
+          <td>{{ toggle('pack', p.n, p.visible) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

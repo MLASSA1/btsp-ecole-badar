@@ -1,0 +1,18 @@
+  <!-- Partners -->
+  {% if partners %}
+  <section class="section partners-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.partners_tag }}</span>
+        <h2>{{ t.partners_title }} <em>{{ t.partners_title_em }}</em></h2>
+      </div>
+      <div class="partners-grid">
+        {% for p in partners %}
+        <a href="{{ p.website_url or '#' }}" class="partner-logo" {% if p.website_url %}target="_blank" rel="noopener"{% endif %}>
+          <img src="{{ p.logo }}" alt="{{ p.name }}" title="{{ p.name }}" loading="lazy">
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

@@ -1,0 +1,16 @@
+  {% if settings.get('show_process', '1') == '1' %}
+  <section class="section process" id="admission">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.process_tag }}</span>
+        <h2>{{ t.process_title }} <em>{{ t.process_title_em }}</em></h2>
+      </div>
+      <ol class="process-grid">
+        <li class="process-step"><span class="step-num">1</span><h4>{{ t.process_1_title }}</h4><p>{{ t.process_1_text }}</p></li>
+        <li class="process-step"><span class="step-num">2</span><h4>{{ t.process_2_title }}</h4><p>{{ t.process_2_text }}</p></li>
+        <li class="process-step"><span class="step-num">3</span><h4>{{ t.process_3_title }}</h4><p>{{ t.process_3_text }}</p></li>
+        <li class="process-step"><span class="step-num">4</span><h4>{{ t.process_4_title }}</h4><p>{{ t.process_4_text }}</p></li>
+      </ol>
+    </div>
+  </section>
+  {% endif %}

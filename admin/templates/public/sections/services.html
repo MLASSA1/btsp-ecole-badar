@@ -1,0 +1,41 @@
+  <!-- Services for professionals -->
+  {% if settings.get('show_services', '1') == '1' and pro_items %}
+  <section class="section pro" id="services">
+    <div class="container">
+      <div class="section-header section-header--light">
+        <span class="section-tag">{{ t.pro_tag }}</span>
+        <h2>{{ t.pro_title }} <em>{{ t.pro_title_em }}</em></h2>
+        <p>{{ t.pro_text }}</p>
+      </div>
+      {# Only the services the admin left visible (Admin → Offre & visibilité).
+         The grid takes its column count from how many remain, so hiding one
+         re-flows the row instead of leaving a hole. #}
+      <div class="pro-grid" style="--cols: {{ [pro_items|length, 4]|min }}">
+        {% for i in pro_items %}
+        <article class="pro-card">
+          <div class="pro-icon">
+            {% if i == 1 %}<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            {% elif i == 2 %}<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg>
+            {% elif i == 3 %}<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 11l3 3 6-6"/><path d="M21 12v6a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3h8"/></svg>
+            {% else %}<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 21h18M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>{% endif %}
+          </div>
+          <h3>{{ t['pro_' ~ i ~ '_title'] }}</h3>
+          <p>{{ t['pro_' ~ i ~ '_desc'] }}</p>
+          <ul class="ticks ticks--light">
+            <li>{{ t['pro_' ~ i ~ '_item_1'] }}</li>
+            <li>{{ t['pro_' ~ i ~ '_item_2'] }}</li>
+            <li>{{ t['pro_' ~ i ~ '_item_3'] }}</li>
+          </ul>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="pro-cta">
+        <div>
+          <h3>{{ t.pro_cta_title }}</h3>
+          <p>{{ t.pro_cta_text }}</p>
+        </div>
+        <a href="{{ lp }}/devis" class="btn btn-accent">{{ t.btn_corporate_contact }}</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}

@@ -42,8 +42,13 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="meet_link">Lien Meet</label>
+          <label for="meet_link">Lien Meet (privé)</label>
           <input type="url" id="meet_link" name="meet_link" value="{{ course.meet_link if course else '' }}" placeholder="https://meet.google.com/xxx-xxx-xxx">
+          <p class="text-sm text-muted" style="margin-top:6px">Visible uniquement par les étudiants dont le paiement est confirmé.</p>
+        </div>
+        <div class="form-group">
+          <label for="price">Prix (DH)</label>
+          <input type="number" id="price" name="price" min="0" step="1" value="{{ '%.0f'|format(course.price or 0) if course else '' }}" placeholder="ex. 1500">
         </div>
         <div class="form-group">
           <label for="lang">Langue</label>

@@ -1,0 +1,15 @@
+  {# Closing call to action on the business-facing pages. #}
+  <section class="cta-band">
+    <div class="container cta-band-inner">
+      <div>
+        <h2>{{ t.pro_cta_title }}</h2>
+        <p>{{ t.pro_cta_text }}</p>
+      </div>
+      <div class="cta-band-actions">
+        <a href="{{ lp }}/devis" class="btn btn-accent">{{ t.btn_corporate_contact }}</a>
+        {% if settings.get('phone') %}
+        <a href="tel:{{ settings.get('phone', '')|replace('.', '')|replace(' ', '') }}" class="btn btn-ghost">{{ settings.get('phone') }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>

@@ -1,0 +1,40 @@
+  {# State-recognised diplomas: every published programme whose diploma type
+     is a "Diplôme d'État". Hide one in the admin and it drops out; with a
+     single one left the card takes the full width (see .state-grid). #}
+  {% if state_formations %}
+  <section class="section state-diplomas" id="diplomes-etat">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.tab_state }}</span>
+        <h2>{{ t.state_title }} <em>{{ t.state_title_em }}</em></h2>
+        <p>{{ t.state_text }}</p>
+      </div>
+      <div class="state-grid" data-count="{{ state_formations|length }}">
+        {% for f in state_formations %}
+        <article class="state-card">
+          <a class="state-media" href="{{ formation_url_base }}{{ f.id }}" tabindex="-1" aria-hidden="true">
+            <img src="{{ f.image or '/uploads/pole-cuisine.jpg' }}" alt="" loading="lazy">
+            <span class="state-seal">{{ f.diploma_type }}</span>
+          </a>
+          <div class="state-body">
+            <span class="state-meta">{{ f.duration }}</span>
+            <h3><a href="{{ formation_url_base }}{{ f.id }}">{{ f.title }}</a></h3>
+            <p>{{ f.description }}</p>
+            {% if f.features %}
+            <ul class="ticks">
+              {% for feat in f.features.split('|') if feat.strip() %}
+              <li>{{ feat.strip() }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <div class="state-actions">
+              <a href="{{ formation_url_base }}{{ f.id }}#inscription" class="btn btn-accent">{{ t.btn_apply }}</a>
+              <a href="{{ formation_url_base }}{{ f.id }}" class="link-arrow">{{ t.detail_program_title }}</a>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

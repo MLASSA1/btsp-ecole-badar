@@ -1,0 +1,24 @@
+  <!-- Custom sections -->
+  {% for cs in custom_sections %}
+  <section class="section custom-section" id="{{ cs.section_key }}" data-animation="{{ cs.animation }}">
+    <div class="container">
+      <div class="custom-section-inner {% if cs.image %}has-image{% endif %}">
+        {% if cs.image %}
+        <div class="custom-section-image">
+          <img src="{{ cs.image }}" alt="{{ cs.title }}" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="custom-section-content">
+          {% if cs.icon %}
+          <div class="custom-section-icon">{{ cs.icon|safe_html }}</div>
+          {% endif %}
+          <h2>{{ cs.title }}{% if cs.subtitle %} <em>{{ cs.subtitle }}</em>{% endif %}</h2>
+          <div class="custom-section-text">{{ cs.content|safe_html }}</div>
+          {% if cs.button_text %}
+          <a href="{{ (cs.button_link|safe_url) or (lp + '/contact') }}" class="btn btn-primary" style="margin-top:20px">{{ cs.button_text }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endfor %}

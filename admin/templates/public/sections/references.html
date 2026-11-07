@@ -1,0 +1,31 @@
+  <!-- Proof. For an employer choosing a provider this outranks every other
+       section on the page, so it sits immediately after the catalogue. -->
+  <section class="section refs" id="references">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.exp_tag }}</span>
+        <h2>{{ t.exp_title }} <em>{{ t.exp_title_em }}</em></h2>
+        <p>{{ t.exp_text }}</p>
+      </div>
+      <div class="refs-grid">
+        <ul class="refs-list">
+          {% for i in range(1, 6) %}
+          <li>
+            <span class="refs-check">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span>{{ t['exp_' ~ i] }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <aside class="refs-clients">
+          <h3>{{ t.exp_clients_title }}</h3>
+          <ul>
+            {% for i in range(1, 4) %}
+            <li>{{ t['exp_client_' ~ i] }}</li>
+            {% endfor %}
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>

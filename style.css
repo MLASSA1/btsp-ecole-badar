@@ -2185,3 +2185,140 @@ h1 em, h2 em, h3 em, .section-header--light h2 em {
 [dir="rtl"] .pdp-head-media::after { background: linear-gradient(255deg, rgba(10,10,10,0.94), rgba(10,10,10,0.78) 52%, rgba(10,10,10,0.5)); }
 .gallery-caption { background: linear-gradient(to top, rgba(10,10,10,0.88), transparent); }
 .pdp-head .card-badge, .pdp-head .badge { border-radius: var(--r-xs); }
+
+/* ============================================================
+   MULTI-PAGE SITE · Nov 2026
+   ============================================================ */
+
+/* Page header on every page except home */
+.page-hero {
+  background: var(--black);
+  color: var(--white);
+  padding: 64px 0 56px;
+  border-bottom: 3px solid var(--brand-red);
+}
+.page-hero h1 { color: var(--white); font-size: clamp(2.2rem, 4.4vw, 3.4rem); margin-top: 14px; }
+.breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.55); }
+.breadcrumb a { color: rgba(255, 255, 255, 0.75); }
+.breadcrumb a:hover { color: var(--white); }
+.breadcrumb [aria-current] { color: var(--white); }
+
+/* Active menu entry */
+.nav-links > li > a.is-active { color: var(--black); box-shadow: inset 0 -2px 0 var(--brand-red); }
+
+/* The menu now has seven entries: switch to the drawer before they crowd. */
+@media (max-width: 1180px) {
+  .nav-toggle { display: flex; }
+  .nav-links {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(340px, 86vw);
+    flex-direction: column; align-items: stretch; gap: 4px;
+    padding: 100px 24px 32px;
+    background: var(--white);
+    box-shadow: -24px 0 60px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.4s var(--ease);
+    overflow-y: auto;
+    z-index: 200;
+  }
+  .nav-links.active { transform: translateX(0); }
+  .nav-links > li > a { padding: 15px 18px; font-size: 1rem; }
+  .nav-links > li > a.is-active { box-shadow: inset 3px 0 0 var(--brand-red); }
+  .nav-links-cta { margin: 16px 0 0; }
+  .nav-links > li.nav-links-cta > a { display: block; text-align: center; }
+  .nav-links-portal { display: block; }
+  [dir="rtl"] .nav-links { right: auto; left: 0; transform: translateX(-100%); }
+  [dir="rtl"] .nav-links.active { transform: translateX(0); }
+  [dir="rtl"] .nav-links > li > a.is-active { box-shadow: inset -3px 0 0 var(--brand-red); }
+}
+
+/* Services grid: as many columns as visible services (max 4) */
+@media (min-width: 1181px) {
+  .pro-grid { grid-template-columns: repeat(var(--cols, 4), 1fr); }
+  .pro-grid .pro-card:nth-child(n) { border-top: none; }
+  .pro-grid .pro-card + .pro-card { border-left: 1px solid rgba(255, 255, 255, 0.14); }
+  [dir="rtl"] .pro-grid .pro-card + .pro-card { border-left: none; border-right: 1px solid rgba(255, 255, 255, 0.14); }
+}
+
+/* State-recognised diplomas: two wide cards; one alone spans the row */
+.state-diplomas { background: var(--white); }
+.state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.state-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.state-card {
+  display: grid; grid-template-rows: auto 1fr;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--brand-blue);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.state-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.state-grid[data-count="1"] .state-card { grid-template-rows: none; grid-template-columns: 1fr 1.1fr; }
+.state-media { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface-3); }
+.state-grid[data-count="1"] .state-media { aspect-ratio: auto; min-height: 100%; }
+.state-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+.state-card:hover .state-media img { transform: scale(1.05); }
+.state-seal {
+  position: absolute; left: 18px; top: 18px;
+  padding: 8px 14px;
+  background: var(--brand-red); color: var(--white);
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  border-radius: var(--r-xs);
+}
+[dir="rtl"] .state-seal { left: auto; right: 18px; }
+.state-body { display: flex; flex-direction: column; padding: 30px 32px 32px; }
+.state-meta { color: var(--brand-blue); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.state-body h3 { font-size: clamp(1.4rem, 2.2vw, 1.8rem); margin-bottom: 12px; }
+.state-body h3 a:hover { color: var(--brand-blue); }
+.state-body > p { margin-bottom: 18px; }
+.state-body .ticks { margin-bottom: 24px; }
+.state-actions { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 18px 26px; }
+[lang="ar"] .state-seal, [lang="ar"] .state-meta { letter-spacing: 0; }
+
+/* Closing call-to-action band */
+.cta-band { background: var(--brand-blue); color: var(--white); padding: 64px 0; }
+.cta-band-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.cta-band h2 { color: var(--white); font-size: clamp(1.7rem, 3vw, 2.3rem); margin-bottom: 8px; }
+.cta-band p { color: rgba(255, 255, 255, 0.8); max-width: 620px; }
+.cta-band-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+.cta-band .btn-ghost { background: transparent; color: var(--white); border: 1px solid rgba(255, 255, 255, 0.55); }
+.cta-band .btn-ghost:hover { background: var(--white); color: var(--brand-blue); }
+
+.about-more { margin-top: 30px; }
+
+@media (max-width: 900px) {
+  .state-grid { grid-template-columns: minmax(0, 1fr); }
+  .state-grid[data-count="1"] .state-card { grid-template-columns: none; grid-template-rows: auto 1fr; }
+  .state-grid[data-count="1"] .state-media { aspect-ratio: 16 / 9; min-height: 0; }
+}
+@media (max-width: 680px) {
+  .page-hero { padding: 44px 0 40px; }
+  .state-body { padding: 24px 22px 26px; }
+  .state-actions .btn { width: 100%; }
+  .cta-band { padding: 48px 0; }
+  .cta-band-actions, .cta-band-actions .btn { width: 100%; }
+}
+
+/* Online courses: paid access */
+.online-access-note {
+  padding: 12px 16px; margin: -12px 0 30px;
+  border-left: 3px solid var(--brand-red);
+  background: var(--white); font-size: 0.92rem; color: var(--ink-soft);
+}
+[dir="rtl"] .online-access-note { border-left: none; border-right: 3px solid var(--brand-red); }
+.online-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+}
+.online-price { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; color: var(--black); }
+
+/* A backdrop-filter makes the navbar the containing block for fixed
+   descendants, which trapped the mobile drawer inside the 78px bar (it
+   opened as a 132px sliver). The bar is opaque white anyway, so drop the
+   blur wherever the drawer is in use. */
+@media (max-width: 1180px) {
+  .navbar { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--white); }
+  /* Keep the menu button (an ✕ while open) above the drawer it controls. */
+  .nav-toggle { position: relative; z-index: 210; }
+}

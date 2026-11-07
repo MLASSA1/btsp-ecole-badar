@@ -1,0 +1,104 @@
+{% extends "admin/base.html" %}
+{% block title %}Inscriptions — {{ course.title }}{% endblock %}
+{% block page_title %}Inscriptions : {{ course.title }}{% endblock %}
+{% block actions %}
+  <a href="{{ url_for('admin_courses') }}" class="btn">← Cours en ligne</a>
+{% endblock %}
+
+{% block content %}
+{% set paid_n = enrollments|selectattr('status', 'equalto', 'paid')|list|length %}
+<div class="stats-grid" style="margin-bottom:22px">
+  <div class="stat-card"><div class="stat-value">{{ enrollments|length - paid_n }}</div><div class="stat-label">En attente de paiement</div></div>
+  <div class="stat-card"><div class="stat-value">{{ paid_n }}</div><div class="stat-label">Accès ouvert (payé)</div></div>
+  <div class="stat-card"><div class="stat-value">{{ '%.0f'|format(total_paid) }} DH</div><div class="stat-label">Encaissé</div></div>
+  <div class="stat-card"><div class="stat-value">{{ '%.0f'|format(course.price or 0) }} DH</div><div class="stat-label">Prix du cours</div></div>
+</div>
+
+<p class="text-muted" style="margin-bottom:18px;max-width:780px">
+  Le lien du live et les modules ne sont visibles que pour les inscriptions <strong>payées</strong>.
+  Une inscription faite depuis l'espace étudiant arrive « en attente » : confirmez le paiement quand il est reçu.
+</p>
+
+<div class="card" style="margin-bottom:24px">
+  <div class="card-body table-wrap" style="padding:0">
+    <table>
+      <thead>
+        <tr><th>Étudiant</th><th>Contact</th><th>Inscrit le</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for e in enrollments %}
+        <tr>
+          <td><strong>{{ e.first_name }} {{ e.last_name }}</strong></td>
+          <td class="text-sm">{{ e.email }}{% if e.phone %}<br>{{ e.phone }}{% endif %}</td>
+          <td class="text-sm">{{ (e.enrolled_at|string)[:10] }}</td>
+          <td>
+            {% if e.status == 'paid' %}<span class="badge badge-success">Payé — accès ouvert</span>
+            {% else %}<span class="badge badge-warning">En attente de paiement</span>{% endif %}
+          </td>
+          <td class="text-sm">
+            {% if e.status == 'paid' %}
+              {{ '%.0f'|format(e.paid_amount or 0) }} DH · {{ e.paid_method }}<br>
+              <span class="text-muted">{{ (e.paid_at|string)[:10] }}{% if e.payment_note %} · {{ e.payment_note }}{% endif %}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if e.status != 'paid' %}
+            <form method="POST" class="flex gap-2" style="flex-wrap:wrap;align-items:center">
+              <input type="hidden" name="action" value="confirm">
+              <input type="hidden" name="enrollment_id" value="{{ e.id }}">
+              <input type="number" name="amount" min="0" step="1" value="{{ '%.0f'|format(course.price or 0) }}" style="width:96px" aria-label="Montant (DH)">
+              <select name="method" aria-label="Moyen de paiement">
+                {% for m in methods %}<option>{{ m }}</option>{% endfor %}
+              </select>
+              <input type="text" name="note" placeholder="Note (reçu n°…)" style="width:140px" aria-label="Note">
+              <button type="submit" class="btn btn-sm btn-primary">Confirmer le paiement</button>
+            </form>
+            {% else %}
+            <form method="POST" style="display:inline" onsubmit="return confirm('Retirer l\'accès de cet étudiant ?')">
+              <input type="hidden" name="action" value="revoke">
+              <input type="hidden" name="enrollment_id" value="{{ e.id }}">
+              <button type="submit" class="btn btn-sm">Retirer l'accès</button>
+            </form>
+            {% endif %}
+            <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer cette inscription ?')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="enrollment_id" value="{{ e.id }}">
+              <button type="submit" class="btn btn-sm btn-danger">Suppr.</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted" style="padding:20px">Aucune inscription pour ce cours.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Inscrire un étudiant qui a déjà payé</div>
+  <div class="card-body">
+    {% if others %}
+    <form method="POST" class="flex gap-2" style="flex-wrap:wrap;align-items:flex-end">
+      <input type="hidden" name="action" value="add">
+      <div class="form-group" style="min-width:260px">
+        <label for="student_id">Étudiant (compte de l'espace étudiant)</label>
+        <select id="student_id" name="student_id" required>
+          <option value="">Choisir…</option>
+          {% for s in others %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} — {{ s.email }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label for="add_amount">Montant (DH)</label>
+        <input type="number" id="add_amount" name="amount" min="0" step="1" value="{{ '%.0f'|format(course.price or 0) }}" style="width:110px"></div>
+      <div class="form-group"><label for="add_method">Moyen</label>
+        <select id="add_method" name="method">{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select></div>
+      <div class="form-group"><label for="add_note">Note</label>
+        <input type="text" id="add_note" name="note" placeholder="Reçu n°…"></div>
+      <div class="form-group"><button type="submit" class="btn btn-primary">Inscrire et ouvrir l'accès</button></div>
+    </form>
+    {% else %}
+    <p class="text-muted">Tous les étudiants inscrits sur le site sont déjà sur ce cours. Un nouvel étudiant doit d'abord créer son compte dans l'Espace Étudiant.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

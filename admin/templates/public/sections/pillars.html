@@ -1,0 +1,84 @@
+  <!-- Pôles / Schools -->
+  {% if settings.get('show_pillars', '1') == '1' %}
+  <section class="section pillars" id="poles">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.pillars_tag }}</span>
+        <h2>{{ t.pillars_title }} <em>{{ t.pillars_title_em }}</em></h2>
+        <p>{{ t.pillars_text }}</p>
+      </div>
+      <div class="pillars-grid">
+        <article class="pillar-card" data-goto="culinary">
+          <div class="pillar-media">
+            <img src="/uploads/pole-cuisine.jpg" alt="{{ t.pillar_1_title }}" loading="lazy">
+            <span class="pillar-index">01</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_1_title }}</h3>
+            <p>{{ t.pillar_1_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_1_item_1 }}</li>
+              <li>{{ t.pillar_1_item_2 }}</li>
+              <li>{{ t.pillar_1_item_3 }}</li>
+            </ul>
+            <a href="{{ lp }}/formations#cat=culinary" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        <article class="pillar-card" data-goto="hospitality">
+          <div class="pillar-media">
+            <img src="/uploads/pole-hotellerie.jpg" alt="{{ t.pillar_2_title }}" loading="lazy">
+            <span class="pillar-index">02</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_2_title }}</h3>
+            <p>{{ t.pillar_2_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_2_item_1 }}</li>
+              <li>{{ t.pillar_2_item_2 }}</li>
+              <li>{{ t.pillar_2_item_3 }}</li>
+            </ul>
+            <a href="{{ lp }}/formations#cat=hospitality" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        <article class="pillar-card" data-goto="business">
+          <div class="pillar-media">
+            <img src="/uploads/pole-gestion.jpg" alt="{{ t.pillar_3_title }}" loading="lazy">
+            <span class="pillar-index">03</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_3_title }}</h3>
+            <p>{{ t.pillar_3_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_3_item_1 }}</li>
+              <li>{{ t.pillar_3_item_2 }}</li>
+              <li>{{ t.pillar_3_item_3 }}</li>
+            </ul>
+            <a href="{{ lp }}/formations#cat=business" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        {# Tied to the same published-categories check as the tabs: a pôle with
+           nothing left to enrol in should not be advertised with a photo and a
+           "voir les programmes" link that lands on an empty grid. Publish a
+           health programme again and this card returns on its own. #}
+        {% if 'health' in category_tabs|map(attribute='key')|list %}
+        <article class="pillar-card" data-goto="health">
+          <div class="pillar-media">
+            <img src="https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=760&h=520&fit=crop" alt="{{ t.pillar_4_title }}" loading="lazy">
+            <span class="pillar-index">04</span>
+          </div>
+          <div class="pillar-body">
+            <h3>{{ t.pillar_4_title }}</h3>
+            <p>{{ t.pillar_4_text }}</p>
+            <ul class="ticks">
+              <li>{{ t.pillar_4_item_1 }}</li>
+              <li>{{ t.pillar_4_item_2 }}</li>
+              <li>{{ t.pillar_4_item_3 }}</li>
+            </ul>
+            <a href="{{ lp }}/formations#cat=health" class="link-arrow">{{ t.btn_view_programs }}</a>
+          </div>
+        </article>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

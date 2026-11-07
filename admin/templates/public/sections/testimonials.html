@@ -1,0 +1,30 @@
+  <!-- Testimonials -->
+  {% if settings.get('show_testimonials', '1') == '1' and testimonials %}
+  <section class="section testimonials">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.testimonials_tag }}</span>
+        <h2>{{ t.testimonials_title }} <em>{{ t.testimonials_title_em }}</em></h2>
+      </div>
+      <div class="testimonials-grid">
+        {% for te in testimonials %}
+        <figure class="testimonial-card">
+          <div class="testimonial-stars">
+            {% for i in range(te.rating) %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            {% endfor %}
+          </div>
+          <blockquote>{{ te.content }}</blockquote>
+          <figcaption class="testimonial-author">
+            <div class="author-avatar">{{ te.avatar_letter or te.name[0] }}</div>
+            <div>
+              <strong>{{ te.name }}</strong>
+              <span>{{ te.promotion }}</span>
+            </div>
+          </figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}

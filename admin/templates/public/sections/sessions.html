@@ -1,0 +1,41 @@
+  <!-- Upcoming sessions -->
+  {% if sessions %}
+  <section class="section sessions-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">{{ t.sessions_tag }}</span>
+        <h2>{{ t.sessions_title }} <em>{{ t.sessions_title_em }}</em></h2>
+      </div>
+      <div class="sessions-grid">
+        {% for s in sessions %}
+        <div class="session-card">
+          <div class="session-date">
+            <span class="session-day">{{ s.start_date[8:10] }}</span>
+            <span class="session-month">{{ s.start_date[5:7] }}/{{ s.start_date[:4] }}</span>
+          </div>
+          <div class="session-info">
+            <h4>{{ s.title }}</h4>
+            <div class="session-meta">
+              <span>{{ t.sessions_starts }}: {{ s.start_date }}</span>
+              <span>{{ t.sessions_location }}: {{ s.location }}</span>
+            </div>
+            <div class="session-spots">
+              <div class="spots-bar">
+                <div class="spots-fill" style="width:{{ (s.spots_taken / s.spots_total * 100)|int if s.spots_total > 0 else 0 }}%"></div>
+              </div>
+              <span class="spots-text">{{ t.sessions_spots }}: {{ s.spots_taken }}/{{ s.spots_total }}</span>
+            </div>
+          </div>
+          <div class="session-action">
+            {% if s.spots_taken >= s.spots_total %}
+              <span class="badge badge-danger">{{ t.sessions_full }}</span>
+            {% else %}
+              <a href="{{ lp }}/contact" class="btn btn-primary btn-sm">{{ t.sessions_register }}</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
