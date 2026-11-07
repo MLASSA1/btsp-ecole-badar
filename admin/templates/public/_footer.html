@@ -47,7 +47,6 @@
           {% for i in (pro_items if pro_items is defined else [1, 2, 3, 4]) %}
           <li><a href="{{ lp }}/services">{{ t['pro_' ~ i ~ '_title'] }}</a></li>
           {% endfor %}
-          <li><a href="{{ lp }}/catalogue">{{ t.nav_catalogue }}</a></li>
           <li><a href="{{ lp }}/devis">{{ t.btn_corporate_contact }}</a></li>
         </ul>
       </div>

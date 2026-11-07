@@ -1421,8 +1421,9 @@ PUBLIC_PAGES = {
     "home": {"label": "nav_home", "sections": [
         "hero", "state_diplomas", "services", "catalogue", "references",
         "pillars", "about", "testimonials", "partners", "custom", "cta_band"]},
-    "services": {"label": "nav_pro", "sections": ["services", "references", "cta_band"]},
-    "catalogue": {"label": "nav_catalogue", "sections": ["catalogue", "cta_band"]},
+    # The training packs live on the business-services page; /catalogue
+    # redirects there (see MOVED_PAGES).
+    "services": {"label": "nav_pro", "sections": ["services", "catalogue", "references", "cta_band"]},
     "references": {"label": "nav_references", "sections": ["references", "partners", "testimonials", "cta_band"]},
     "formations": {"label": "nav_formations", "sections": ["state_diplomas", "pillars", "formations", "sessions", "process"]},
     "en-ligne": {"label": "nav_online", "sections": ["online"]},
@@ -1431,6 +1432,10 @@ PUBLIC_PAGES = {
     "contact": {"label": "nav_contact", "sections": ["contact", "faq"]},
     "devis": {"label": "nav_quote", "sections": ["devis"]},
 }
+
+
+# Pages that were folded into another one: old links keep working.
+MOVED_PAGES = {"catalogue": "services#catalogue"}
 
 
 @app.route("/")
@@ -1450,6 +1455,8 @@ def page_default(slug):
     # "/en" without its slash would otherwise land here and 404.
     if slug in SUPPORTED_LANGS:
         return redirect("/%s/" % slug, code=301)
+    if slug in MOVED_PAGES:
+        return redirect("/" + MOVED_PAGES[slug], code=301)
     if slug not in PUBLIC_PAGES or slug == "home":
         abort(404)
     return render_page("fr", slug)
@@ -1457,6 +1464,8 @@ def page_default(slug):
 
 @app.route("/<lang>/<slug>")
 def page_lang(lang, slug):
+    if lang in SUPPORTED_LANGS and slug in MOVED_PAGES:
+        return redirect(lang_prefix(lang) + "/" + MOVED_PAGES[slug], code=301)
     if lang not in SUPPORTED_LANGS or slug not in PUBLIC_PAGES or slug == "home":
         abort(404)
     if lang == "fr":

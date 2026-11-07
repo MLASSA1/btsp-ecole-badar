@@ -53,7 +53,7 @@
       {# One entry per page; what a business buys first, the school second.
          `page` is set by render_page / render_formation for the active state. #}
       {% set lp = lp if lp is defined else ('' if lang == 'fr' else '/' + lang) %}
-      {% for slug, key in [('services', 'nav_pro'), ('catalogue', 'nav_catalogue'), ('references', 'nav_references'),
+      {% for slug, key in [('services', 'nav_pro'), ('references', 'nav_references'),
                            ('formations', 'nav_formations'), ('en-ligne', 'nav_online'), ('a-propos', 'nav_about'),
                            ('contact', 'nav_contact')] %}
       <li><a href="{{ lp }}/{{ slug }}"{% if page is defined and page == slug %} class="is-active" aria-current="page"{% endif %}>{{ t[key] }}</a></li>

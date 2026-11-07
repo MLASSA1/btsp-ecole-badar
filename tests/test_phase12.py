@@ -3,7 +3,7 @@ from harness import *
 
 pub = app.test_client()
 print("Phase 1 — pages")
-pages = ["/", "/services", "/catalogue", "/references", "/formations", "/en-ligne",
+pages = ["/", "/services", "/references", "/formations", "/en-ligne",
          "/certificats", "/a-propos", "/contact", "/devis"]
 for lp in ("", "/en", "/ar"):
     for p in pages:
@@ -18,8 +18,11 @@ i_hero = home.find('class="hero"'); i_state = home.find('id="diplomes-etat"'); i
 check("home: state diplomas sit right after the hero", 0 < i_hero < i_state < i_pro, (i_hero, i_state, i_pro))
 state_titles = re.findall(r'<h3><a href="/formation/\d+">([^<]+)</a></h3>', home)
 check("home: shows the two state diplomas", len(state_titles) == 2, state_titles)
-check("home: packs teaser shows 3 + 'see all'", home.count('class="corp-card pack-card"') == 3 and '/catalogue" class="btn btn-primary' in home)
-check("catalogue page shows all 9 packs", pub.get("/catalogue").data.decode().count('class="corp-card pack-card"') == 9)
+check("home: packs teaser shows 3 + 'see all'", home.count('class="corp-card pack-card"') == 3 and '/services#catalogue" class="btn btn-primary' in home)
+check("services page shows all 9 packs", pub.get("/services").data.decode().count('class="corp-card pack-card"') == 9)
+check("/catalogue redirects to the services page", pub.get("/catalogue").headers.get("Location", "").endswith("/services#catalogue"))
+check("/en/catalogue redirects too", pub.get("/en/catalogue").headers.get("Location", "").endswith("/en/services#catalogue"))
+check("menu no longer lists the catalogue", 'href="/catalogue"' not in home and "Services Entreprise" in home)
 check("/en redirects to /en/", pub.get("/en").status_code == 301)
 check("/fr/services redirects to /services", pub.get("/fr/services").headers.get("Location", "").endswith("/services"))
 check("unknown page 404", pub.get("/nope").status_code == 404 and pub.get("/en/nope").status_code == 404)
@@ -42,10 +45,11 @@ check("hidden service gone from footer and quote form",
       and t["pro_2_title"] not in pub.get("/").data.decode().split('<footer')[1])
 admin.post("/admin/offre", data={"kind": "pack", "item": "1"})
 admin.post("/admin/offre", data={"kind": "pack", "item": "3"})
-cat = pub.get("/catalogue").data.decode()
+cat = pub.get("/services").data.decode()
 nums = re.findall(r'class="corp-num">[^<]*?(\d+)</span>', cat)
 check("two packs hidden -> 7 shown, renumbered 1..7", nums == [str(i) for i in range(1, 8)], nums)
 check("heading says 7", re.search(r"<h2>7 ", cat) is not None)
+check("state cards say 'Diplôme reconnu par l'État'", "Diplôme reconnu par l&#39;État" in pub.get("/").data.decode())
 check("hidden pack title absent", t["pack_1_title"] not in cat and t["pack_3_title"] not in cat)
 check("home teaser still 3 packs", pub.get("/").data.decode().count('class="corp-card pack-card"') == 3)
 # hide all services -> section disappears entirely
@@ -66,7 +70,7 @@ for k, i in (("pro", 1), ("pro", 2), ("pro", 3), ("pro", 4), ("pack", 1), ("pack
     admin.post("/admin/offre", data={"kind": k, "item": str(i)})
 check("restored: 4 services, 9 packs, 2 diplomas",
       pub.get("/services").data.decode().count('class="pro-card"') == 4
-      and pub.get("/catalogue").data.decode().count('class="corp-card pack-card"') == 9
+      and pub.get("/services").data.decode().count('class="corp-card pack-card"') == 9
       and pub.get("/").data.decode().split('id="diplomes-etat"')[1][:600].count('data-count="2"') == 1)
 check("bad action rejected politely", admin.post("/admin/offre", data={"kind": "x", "item": "1"}).status_code == 302)
 done()

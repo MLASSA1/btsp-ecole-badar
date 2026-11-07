@@ -223,7 +223,7 @@ TRANSLATIONS = {
         # Top bar & nav
         "hero_badge": "Formation professionnelle & conseil — Hôtellerie, Restauration",
         "topbar_note": "Établissement privé de formation professionnelle — Agadir, Maroc",
-        "nav_pro": "Services Pro",
+        "nav_pro": "Services Entreprise",
         "nav_student_space": "Espace Étudiant",
         # Hero
         "hero_point_1": "9 packs de formation par département — hygiène, HACCP, service, management",
@@ -1097,7 +1097,7 @@ TRANSLATIONS = {
         # الشريط العلوي والقائمة
         "hero_badge": "تكوين مهني واستشارة — الفندقة والمطعمة",
         "topbar_note": "مؤسسة خاصة للتكوين المهني — أكادير، المغرب",
-        "nav_pro": "خدمات المهنيين",
+        "nav_pro": "خدمات المقاولات",
         "nav_student_space": "فضاء الطالب",
         # الواجهة
         "hero_point_1": "9 باقات تكوين حسب القسم — النظافة، الهاسب، الخدمة، التدبير",

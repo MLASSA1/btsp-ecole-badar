@@ -39,11 +39,12 @@ check "diploma specimen"    "$(code "$SITE/uploads/diplome-specimen-btsp.jpg")" 
 echo ""
 # Every public page, in each language.
 for lp in "" /en /ar; do
-    for page in services catalogue references formations en-ligne certificats a-propos contact devis; do
+    for page in services references formations en-ligne certificats a-propos contact devis; do
         check "page $lp/$page" "$(code "$SITE$lp/$page")" 200
     done
 done
 check "old /#anchor links still land on home" "$(code "$SITE/")" 200
+check "old /catalogue redirects"  "$(code "$SITE/catalogue")"  301
 
 echo ""
 headers=$(curl -s -D - -o /dev/null "$SITE/")

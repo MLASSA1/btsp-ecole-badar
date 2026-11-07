@@ -7,7 +7,7 @@
       if (!body.classList.contains('page-home') || !location.hash) return;
       const lp = {{ lp|tojson }};
       const moved = {
-        '#services': '/services', '#catalogue': '/catalogue', '#references': '/references',
+        '#services': '/services', '#catalogue': '/services#catalogue', '#references': '/references',
         '#formations': '/formations', '#poles': '/formations', '#admission': '/formations',
         '#en-ligne': '/en-ligne', '#certificats': '/certificats', '#apropos': '/a-propos',
         '#galerie': '/a-propos', '#contact': '/contact', '#pro-contact': '/devis'

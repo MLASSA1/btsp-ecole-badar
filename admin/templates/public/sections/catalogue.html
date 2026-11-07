@@ -31,7 +31,7 @@
       </div>
       <div class="corp-cta">
         {% if page == 'home' and pack_items|length > shown_packs|length %}
-        <a href="{{ lp }}/catalogue" class="btn btn-primary btn-lg">{{ t.pack_view_all }} ({{ pack_count }})</a>
+        <a href="{{ lp }}/services#catalogue" class="btn btn-primary btn-lg">{{ t.pack_view_all }} ({{ pack_count }})</a>
         {% else %}
         <a href="{{ lp }}/devis" class="btn btn-accent btn-lg">{{ t.pack_cta }}</a>
         <p class="pack-note">{{ t.pack_note }}</p>
