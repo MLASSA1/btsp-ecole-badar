@@ -211,7 +211,7 @@ TRANSLATIONS = {
         "btn_apply": "M'inscrire à ce Parcours",
         "btn_ask_info": "Demander des Informations",
         # Top bar & nav
-        "hero_badge": "Formation professionnelle & conseil — Hôtellerie, Restauration, Agroalimentaire",
+        "hero_badge": "Formation professionnelle & conseil — Hôtellerie, Restauration",
         "topbar_note": "Établissement privé de formation professionnelle — Agadir, Maroc",
         "nav_pro": "Services Pro",
         "nav_student_space": "Espace Étudiant",
@@ -638,7 +638,7 @@ TRANSLATIONS = {
         "btn_apply": "Enrol in This Program",
         "btn_ask_info": "Request Information",
         # Top bar & nav
-        "hero_badge": "Professional training & consulting — Hospitality, Catering, Food industry",
+        "hero_badge": "Professional training & consulting — Hospitality, Catering",
         "topbar_note": "Private vocational training institute — Agadir, Morocco",
         "nav_pro": "Business Services",
         "nav_student_space": "Student Portal",
@@ -1065,7 +1065,7 @@ TRANSLATIONS = {
         "btn_apply": "التسجيل في هذا المسار",
         "btn_ask_info": "طلب معلومات",
         # الشريط العلوي والقائمة
-        "hero_badge": "تكوين مهني واستشارة — الفندقة، المطعمة، الصناعة الغذائية",
+        "hero_badge": "تكوين مهني واستشارة — الفندقة والمطعمة",
         "topbar_note": "مؤسسة خاصة للتكوين المهني — أكادير، المغرب",
         "nav_pro": "خدمات المهنيين",
         "nav_student_space": "فضاء الطالب",
